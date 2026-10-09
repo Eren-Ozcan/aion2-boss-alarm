@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AION2 Boss Alarm</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="title">
+      <h1 data-i18n="appName">AION2 Boss Alarm</h1>
+      <span id="status" class="chip" role="status"></span>
+    </div>
+    <p id="hint" class="hint"></p>
+    <div id="setup" class="setup" hidden></div>
+  </header>
+
+  <section class="toolbar" aria-label="Sound and alarms">
+    <div class="row">
+      <button id="enableAll" class="btn" data-i18n="enableAll"></button>
+      <button id="disableAll" class="btn" data-i18n="disableAll"></button>
+    </div>
+    <div class="row sound">
+      <label class="btn file">
+        <span data-i18n="chooseSound"></span>
+        <input id="soundFile" type="file" accept="audio/*" hidden>
+      </label>
+      <button id="resetSound" class="btn ghost" data-i18n="defaultSound"></button>
+      <button id="testSound" class="btn" data-i18n="test"></button>
+      <label class="vol"><span data-i18n="volume"></span>
+        <input id="volume" type="range" min="0" max="100" value="80">
+      </label>
+    </div>
+    <div id="soundName" class="muted"></div>
+  </section>
+
+  <main>
+    <h2 data-i18n="field"></h2>
+    <div id="field" class="list"></div>
+    <h2 data-i18n="abyss"></h2>
+    <div id="abyss" class="list"></div>
+  </main>
+
+  <div id="toasts" class="toasts" aria-live="assertive"></div>
+  <script src="main.js"></script>
+</body>
+</html>
