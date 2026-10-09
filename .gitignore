@@ -1,0 +1,4 @@
+# Raw captures hold game chat and account traffic: never commit them.
+tools/capture/captures/
+*.jsonl
+__pycache__/
