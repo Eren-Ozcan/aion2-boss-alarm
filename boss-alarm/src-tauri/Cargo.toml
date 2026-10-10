@@ -1,6 +1,6 @@
 [package]
 name = "aion2-boss-alarm"
-version = "0.1.1"
+version = "0.1.2"
 description = "Sound alarms for AION 2 field and abyss boss respawns"
 edition = "2021"
 license = "GPL-3.0-or-later"
