@@ -79,6 +79,11 @@ html { font-size: calc(15px * var(--scale)); }
 .soon-row.born { background: rgba(226, 194, 125, .16); }
 .soon-row.born::before { background: var(--gold); box-shadow: 0 0 0.6667rem rgba(226, 194, 125, .7); }
 .soon-row.born .t { color: var(--gold); letter-spacing: .06em; text-transform: uppercase; }
+/* scheduled events: cool blue, so they never read as a boss */
+.soon-row.event { background: rgba(110, 170, 255, .1); }
+.soon-row.event::before, .soon-row.event.imminent::before, .soon-row.event.born::before { background: #6eaaff; box-shadow: 0 0 0.5333rem rgba(110, 170, 255, .55); }
+.soon-row.event .z { padding: 0.1rem 0.4rem; border-radius: 0.2667rem; background: rgba(110, 170, 255, .2); color: #a9ccff; }
+.soon-row.event .t, .soon-row.event.imminent .t, .soon-row.event.born .t { color: #8fbcff; }
 @media (prefers-reduced-motion: no-preference) {
   .soon-row.born { animation: born 1s ease-in-out infinite alternate; }
   @keyframes born { from { background: rgba(226, 194, 125, .1); } to { background: rgba(226, 194, 125, .24); } }

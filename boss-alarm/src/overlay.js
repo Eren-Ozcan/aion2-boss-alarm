@@ -464,7 +464,7 @@ function paintTimers() {
   alertBox.hidden = alerts.length === 0;
   if (alerts.length) {
     const rows = alerts.slice(0, 4).map((a) => {
-      const r = el("div", `soon-row${a.born ? " born" : a.left < 300_000 ? " imminent" : ""}`);
+      const r = el("div", `soon-row${a.event ? " event" : ""}${a.born ? " born" : a.left < 300_000 ? " imminent" : ""}`);
       r.append(el("span", "n", a.b.name), el("span", "z", a.event ? TEXT.event : zoneLabel(a.b)), el("span", "t", a.born ? (a.event ? TEXT.started : TEXT.born) : clockText(a.left)));
       return r;
     });
