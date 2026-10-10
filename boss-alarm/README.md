@@ -86,6 +86,10 @@ cd src-tauri && cargo test
 - How the boss list packet was decoded: [docs/boss-list-packet.md](../docs/boss-list-packet.md).
 - Not yet known: the timer of "Watcher Kaira" in the abyss list (the packet holds none for it).
 
+## Windows SmartScreen
+The installer is not code-signed yet, so Windows may show "Windows protected your PC". Choose
+**More info**, then **Run anyway**. The in-app updates are signed separately and are not affected.
+
 ## Disclaimer
 - Unofficial fan project. Not affiliated with, endorsed by or approved by NCSOFT or any
   AION 2 publisher. AION and all related names belong to their owners.
@@ -98,6 +102,8 @@ cd src-tauri && cargo test
 - You use this software entirely at your own risk. The authors accept no responsibility for
   account actions, lost data, or any other damage. It is provided "as is", without warranty
   of any kind (see the GPL-3.0 license).
+- The class icons and the combat power icon are NCSOFT's artwork, used here as-is. They are
+  not covered by the GPL-3.0 license of this project's code.
 - If NCSOFT asks for this project to be taken down or changed, it will be.
 
 ## License
