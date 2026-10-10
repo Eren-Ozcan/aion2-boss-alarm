@@ -1,6 +1,6 @@
 [package]
-name = "aion2-boss-alarm"
-version = "0.1.2"
+name = "bellmeter"
+version = "0.2.0"
 description = "Sound alarms for AION 2 field and abyss boss respawns"
 edition = "2021"
 license = "GPL-3.0-or-later"
@@ -9,7 +9,7 @@ license = "GPL-3.0-or-later"
 members = ["dps-core"]
 
 [lib]
-name = "aion2_boss_alarm_lib"
+name = "bellmeter_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

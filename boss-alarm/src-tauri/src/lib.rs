@@ -644,7 +644,7 @@ pub fn run() {
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&overlay_item, &lock_item, &mute_item, &show, &quit])?;
             let mut tray = TrayIconBuilder::new()
-                .tooltip("AION2 Boss Alarm")
+                .tooltip("BellMeter")
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id.as_ref() {
@@ -690,5 +690,5 @@ pub fn run() {
             Ok(())
         })
         .run(tauri::generate_context!())
-        .expect("error while running AION2 Boss Alarm");
+        .expect("error while running BellMeter");
 }

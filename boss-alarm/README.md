@@ -1,4 +1,4 @@
-# AION2 Boss Alarm
+# BellMeter
 
 A small Windows app for AION 2: sound alarms before field and abyss bosses respawn, and a
 DPS meter in a see-through overlay.

@@ -6,7 +6,7 @@ const { listen } = window.__TAURI__.event;
 // ---------- text ----------
 const TEXT = {
   en: {
-    appName: "AION2 Boss Alarm",
+    appName: "BellMeter",
     tabBosses: "Bosses",
     tabDps: "DPS",
     charName: "Character name",
@@ -98,14 +98,14 @@ const TEXT = {
     hintWaiting: "Start AION 2. Timers sync when you open the in-game map or boss list.",
     hintOpen: "Open the in-game map or boss list to sync timers. Alarms keep running with the map closed.",
     hintSynced: (ago) => `Last sync ${ago} ago. Open the map again after a boss is killed to get the new timer.`,
-    npcap: "Boss Alarm reads game network traffic with Npcap. Install it from",
+    npcap: "BellMeter reads game network traffic with Npcap. Install it from",
     npcapOpts: "and tick “Install Npcap in WinPcap API-compatible Mode”, then press Retry.",
     retry: "Retry",
     failed: "Capture could not start. Try running the app as administrator.",
     ago: (s) => (s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)} min` : `${Math.floor(s / 3600)} h ${Math.floor((s % 3600) / 60)} min`),
   },
   tr: {
-    appName: "AION2 Boss Alarm",
+    appName: "BellMeter",
     tabBosses: "Bosslar",
     tabDps: "DPS",
     charName: "Karakter adı",
@@ -197,7 +197,7 @@ const TEXT = {
     hintWaiting: "AION 2'yi aç. Süreler, oyun içi haritayı veya boss listesini açınca eşitlenir.",
     hintOpen: "Süreleri eşitlemek için oyun içi haritayı veya boss listesini aç. Harita kapalıyken de alarmlar çalışır.",
     hintSynced: (ago) => `Son eşitleme ${ago} önce. Bir boss kesilince yeni süreyi almak için haritayı tekrar aç.`,
-    npcap: "Boss Alarm oyun ağ trafiğini Npcap ile okur. Şuradan kur:",
+    npcap: "BellMeter oyun ağ trafiğini Npcap ile okur. Şuradan kur:",
     npcapOpts: "ve kurulumda “Install Npcap in WinPcap API-compatible Mode” kutusunu işaretle, sonra Yeniden dene'ye bas.",
     retry: "Yeniden dene",
     failed: "Yakalama başlatılamadı. Uygulamayı yönetici olarak çalıştırmayı dene.",
