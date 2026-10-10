@@ -1,0 +1,15 @@
+[package]
+name = "dps-core"
+version = "0.1.0"
+description = "AION 2 combat packet parser and DPS aggregation (derived from A2Tools DPS Meter)"
+edition = "2024"
+license = "GPL-3.0-or-later"
+
+[dependencies]
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+lz4_flex = "0.14.0"
+tracing = "0.1"
+chrono = { version = "0.4", features = ["serde"] }
+parking_lot = "0.12"
+sha2 = "0.11.0"
