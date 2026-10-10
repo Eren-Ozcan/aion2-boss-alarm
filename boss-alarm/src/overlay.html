@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DPS overlay</title>
+  <link rel="stylesheet" href="overlay.css">
+</head>
+<body>
+  <div class="meter" id="meter">
+    <div class="header" data-tauri-drag-region>
+      <span id="bossName" class="boss-name" data-tauri-drag-region></span>
+      <div class="btns">
+        <button id="viewBtn" class="hbtn" aria-label="Switch view" title="Bosses / DPS">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        </button>
+        <button id="windowBtn" class="hbtn" aria-label="Open settings window" title="Alarms, history, settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 14h8"/></svg>
+        </button>
+        <button id="resetBtn" class="hbtn" aria-label="Reset" title="Reset">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/></svg>
+        </button>
+        <button id="settingsBtn" class="hbtn" aria-label="Settings" title="Settings" aria-expanded="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        </button>
+        <button id="closeBtn" class="hbtn close" aria-label="Close overlay" title="Close">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="settings" class="settings" hidden>
+      <label><span id="lblOpacity"></span>
+        <input id="opacity" type="range" min="0" max="100" value="40">
+      </label>
+      <label><span id="lblRows"></span>
+        <input id="rowCount" type="range" min="1" max="8" value="6">
+      </label>
+      <label><span id="lblScale"></span>
+        <input id="textScale" type="range" min="80" max="170" step="5" value="100">
+      </label>
+      <label class="check"><span id="lblEvery"></span>
+        <input id="everyFight" type="checkbox" checked>
+      </label>
+      <label class="check"><span id="lblFit"></span>
+        <input id="autoFit" type="checkbox" checked>
+      </label>
+    </div>
+
+    <div id="hp" class="hp" hidden>
+      <div id="hpFill" class="hp-fill"></div>
+      <div class="hp-text"><span id="hpPct"></span><span id="hpAmt"></span></div>
+    </div>
+
+    <div id="list" class="list"></div>
+    <div id="empty" class="empty"></div>
+
+    <div class="footer" data-tauri-drag-region>
+      <span id="dot" class="dot"></span>
+      <span id="time" class="time"></span>
+      <span id="status" class="status" data-tauri-drag-region></span>
+      <span id="ttk" class="ttk"></span>
+      <span id="ping" class="ping" title="Ping"></span>
+      <button id="modeBtn" class="fbtn" type="button" aria-label="Target mode"></button>
+      <button id="metricBtn" class="fbtn" type="button" aria-label="Figures shown"></button>
+      <button id="sortBtn" class="fbtn icon" type="button" aria-label="Sort order" title="Sort order">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path id="sortIcon" d="M12 5v14M6 13l6 6 6-6"/></svg>
+      </button>
+    </div>
+    <div id="resizeHandle" class="resize" aria-hidden="true"></div>
+  </div>
+  <script src="overlay.js"></script>
+</body>
+</html>
