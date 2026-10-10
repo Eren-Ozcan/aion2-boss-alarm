@@ -84,6 +84,11 @@ pub struct DpsCalculator {
     every_fight: bool,
 }
 
+/// This many players hitting a target whose NPC code is unknown mark it as a boss fight.
+const CROWD_BOSS_ACTORS: usize = 8;
+/// Max HP from which a target is shown with a boss HP bar in All Targets.
+const BOSS_SIZED_HP: i64 = 1_000_000;
+
 impl DpsCalculator {
     pub fn new(
         data_storage: Arc<DataStorage>,
@@ -116,6 +121,56 @@ impl DpsCalculator {
     /// itself never sets this.
     pub fn set_every_fight(&mut self, on: bool) {
         self.every_fight = on;
+    }
+
+    /// One line per target hit so far: id, NPC code, whether the table calls it a boss,
+    /// how many players hit it, total damage. For finding out why a fight is not shown.
+    pub fn debug_targets(&self) -> Vec<String> {
+        let mob = self.data_storage.get_mob_data();
+        let us = self.our_side();
+        let mut v: Vec<(i64, String)> = self
+            .data_storage
+            .get_combat_snapshot()
+            .iter()
+            .map(|(&tid, td)| {
+                let code = mob.get(&tid).copied();
+                let boss = code.is_some_and(|c| self.npc_lookup.is_boss(c));
+                (
+                    td.total_damage as i64,
+                    format!(
+                        "target {tid} code {:?} boss {boss} ours {} actors {} damage {} last {}",
+                        code,
+                        self.fight_is_ours(td, &us, false),
+                        td.actors.len(),
+                        td.total_damage,
+                        td.last_damage_time
+                    ),
+                )
+            })
+            .collect();
+        v.sort_by(|a, b| b.0.cmp(&a.0));
+        v.into_iter().take(8).map(|x| x.1).collect()
+    }
+
+    /// (max HP, current HP or -1, damage dealt) of the boss-sized target hit hardest in the last
+    /// minute. A target counts as boss-sized from `BOSS_SIZED_HP` up, so mobs do not get a bar.
+    fn focus_boss_hp(&self) -> Option<(i64, i64, i64)> {
+        let combat = self.data_storage.get_combat_snapshot();
+        let latest = combat.values().map(|td| td.last_damage_time).max()?;
+        let (tid, td, max) = combat
+            .iter()
+            .filter(|(_, td)| td.last_damage_time >= latest - 60_000)
+            .filter_map(|(&tid, td)| {
+                let max = self.data_storage.get_mob_hp(tid)? as i64;
+                (max >= BOSS_SIZED_HP).then_some((tid, td, max))
+            })
+            .max_by_key(|(_, td, _)| td.total_damage)?;
+        let cur = if self.data_storage.is_entity_dead(tid) {
+            0
+        } else {
+            self.data_storage.get_mob_current_hp(tid).map(|h| h as i64).unwrap_or(-1)
+        };
+        Some((max, cur, td.total_damage as i64))
     }
 
     pub fn set_target_selection_mode(&mut self, id: &str) {
@@ -467,10 +522,19 @@ impl DpsCalculator {
         for (&uid, data) in &mut dps_data.map {
             // Combat power joins on the character name: the roster carries an
             // account-level dbid, not the session entity id keyed here.
-            data.combat_power = party_members
-                .get(&data.nickname)
-                .map(|m| m.combat_power)
+            let member = party_members.get(&data.nickname);
+            data.combat_power = member.map(|m| m.combat_power).unwrap_or(0);
+            data.direct = data.analyzed_data.values().any(|s| s.times > 0);
+            data.level = member.map(|m| m.level).unwrap_or(0);
+            data.gear_score = member.map(|m| m.gear_score).unwrap_or(0);
+            data.server_id = member
+                .map(|m| m.server_id)
+                .filter(|&s| s != 0)
+                .or_else(|| self.data_storage.player_server(&data.nickname))
                 .unwrap_or(0);
+            if data.level == 0 && local_ids.as_ref().is_some_and(|ids| ids.contains(&uid)) {
+                data.level = self.data_storage.local_profile().level.unwrap_or(0) as i32;
+            }
             if data.job.is_empty() {
                 if local_ids.as_ref().is_some_and(|ids| ids.contains(&uid)) {
                     // A class seen earlier this session survives a reset
@@ -507,6 +571,16 @@ impl DpsCalculator {
         {
             dps_data.target_total_damage = target_max_hp;
             dps_data.target_current_hp = 0;
+        }
+        // All Targets has no single target, so no HP bar. Show the HP of the boss-sized target
+        // that is being hit hardest right now, if the game has told us its HP.
+        if self.current_target == 0 && dps_data.target_max_hp == 0 {
+            if let Some((max, cur, dealt)) = self.focus_boss_hp() {
+                dps_data.target_max_hp = max;
+                dps_data.target_current_hp = cur;
+                dps_data.target_total_damage = dealt;
+                dps_data.target_is_boss = true;
+            }
         }
         self.last_dps_snapshot = Some(dps_data.clone());
         dps_data
@@ -627,8 +701,14 @@ impl DpsCalculator {
                 let us = self.our_side();
                 let boss_targets: Vec<_> = combat_data.iter()
                     .filter(|&(&tid, td)| {
-                        mob_data.get(&tid).is_some_and(|&mob_code| self.npc_lookup.is_boss(mob_code))
-                            && self.fight_is_ours(td, &us, false)
+                        // A target whose spawn the meter never saw (it started after the boss
+                        // appeared) has no NPC code, so the table cannot call it a boss. With
+                        // "show bosses I am not fighting" on, one that a crowd is hitting is one.
+                        let known_boss = mob_data.get(&tid).is_some_and(|&mob_code| self.npc_lookup.is_boss(mob_code));
+                        let crowd_boss = self.every_fight
+                            && !mob_data.contains_key(&tid)
+                            && td.actors.len() >= CROWD_BOSS_ACTORS;
+                        (known_boss || crowd_boss) && self.fight_is_ours(td, &us, false)
                     })
                     .map(|(&tid, _)| tid)
                     .collect();
@@ -1951,6 +2031,32 @@ mod tests {
         let mut rows: Vec<i32> = shown.map.keys().copied().collect();
         rows.sort_unstable();
         assert_eq!(rows, vec![2653, 7983, 13179, 15468]);
+    }
+
+    /// A boss whose spawn the meter never saw has no NPC code. With "show bosses I am
+    /// not fighting" on, a crowd hitting it still makes it a boss fight.
+    #[test]
+    fn boss_mode_shows_a_crowds_boss_of_unknown_code_when_every_fight_is_on() {
+        let storage = Arc::new(DataStorage::new());
+        storage.set_local_player_id(Some(7983));
+        let mut calc = boss_meter(&storage);
+        calc.set_every_fight(true);
+        for (i, stranger) in [2653, 15468, 13179, 100, 101, 102, 103].into_iter().enumerate() {
+            storage.append_damage(hit(stranger, 60_000, 2_000 + i as i64));
+        }
+        assert_eq!(calc.get_dps().target_id, 0, "seven players are not yet a crowd");
+        storage.append_damage(hit(104, 60_000, 2_100));
+        let shown = calc.get_dps();
+        assert_eq!(shown.target_id, 60_000);
+        assert_eq!(shown.map.len(), 8);
+
+        // Off, the meter stays off strangers' fights.
+        let quiet = Arc::new(DataStorage::new());
+        quiet.set_local_player_id(Some(7983));
+        for (i, stranger) in (100..110).enumerate() {
+            quiet.append_damage(hit(stranger, 60_000, 2_000 + i as i64));
+        }
+        assert_eq!(boss_meter(&quiet).get_dps().target_id, 0);
     }
 
     #[test]

@@ -163,12 +163,15 @@ impl DpsEngine {
     /// Once the game has said who you are, keep that name for the next start.
     fn remember_identity(&mut self) {
         if !self.storage.local_identity_from_game() {
-            // The game has not named you yet: show the remembered or typed name
-            // on your row, unless the id was only guessed from party counts
-            // (after a character switch the name could be the last one's).
+            // The game has not named you yet: show the remembered or typed name on your
+            // row. This holds also when the id was only worked out from the fight (an app
+            // started mid-session never sees the self record): a bare #id there made the
+            // player look for themselves in vain. A wrong name, after switching characters
+            // between sessions, is fixed by typing the name in the DPS tab, and the game's
+            // own record replaces it at the next login or zone change.
             if let (Some(id), Some(name)) = (self.storage.local_player_id(), self.character_name()) {
                 let bare = self.storage.get_nickname(id as i32).is_none_or(|n| n.chars().all(|c| c.is_ascii_digit()));
-                if bare && (self.manual_name || !self.storage.local_id_from_scope()) {
+                if bare {
                     self.storage.set_permanent_nickname(id as i32, &name);
                 }
             }
@@ -219,6 +222,10 @@ impl DpsEngine {
     /// Show a boss fight whenever one is in range, even one you are not in
     /// (the meter also reads that way before it knows who you are). Off, only
     /// fights of you or your party count, so strangers' fights stay off it.
+    pub fn debug_targets(&self) -> Vec<String> {
+        self.calculator.debug_targets()
+    }
+
     pub fn set_every_fight(&mut self, on: bool) {
         self.every_fight = on;
         self.calculator.set_every_fight(on);

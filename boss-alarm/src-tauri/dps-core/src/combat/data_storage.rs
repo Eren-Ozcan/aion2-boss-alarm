@@ -774,6 +774,11 @@ impl DataStorage {
         }
     }
 
+    /// The home server last stated for `name`, if any.
+    pub fn player_server(&self, name: &str) -> Option<u16> {
+        self.inner.read().player_servers.get(name.trim()).copied()
+    }
+
     /// Your class and level, as your own self record states them.
     ///
     /// A record whose level did not read (a partial copy, the scan having met

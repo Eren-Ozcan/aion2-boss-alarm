@@ -18,6 +18,21 @@ pub struct PersonalData {
     /// Combat power from the party roster packet, or 0 when this player isn't in
     /// your party (the roster is the only source, so non-party players have none).
     pub combat_power: i64,
+    /// Level, gear score and home server, where the game told us. Party members
+    /// come from the roster, you from your self record; strangers only ever
+    /// have a server (if that). 0 means not known.
+    #[serde(default)]
+    pub level: i32,
+    #[serde(default)]
+    pub gear_score: i32,
+    #[serde(default)]
+    pub server_id: u16,
+    /// True when the player has direct hits on record. The server sends you
+    /// your own hits but, from other players, mostly only damage-over-time
+    /// ticks, so a player with none is a fraction of their real damage and
+    /// should not be ranked beside you. Filled in with the roster fields.
+    #[serde(default = "default_true")]
+    pub direct: bool,
     /// Renders this player's name gold. Resolved locally against a roster the
     /// meter downloads — see `crate::supporters`; nothing about your party is
     /// ever sent anywhere to work this out.
@@ -27,6 +42,10 @@ pub struct PersonalData {
     /// meter anybody should trust.
     #[serde(default)]
     pub is_supporter: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl PersonalData {
@@ -39,6 +58,10 @@ impl PersonalData {
             analyzed_data: HashMap::new(),
             nickname,
             combat_power: 0,
+            level: 0,
+            gear_score: 0,
+            server_id: 0,
+            direct: true,
             is_supporter: false,
         }
     }
@@ -52,6 +75,10 @@ impl PersonalData {
             analyzed_data: HashMap::new(),
             nickname,
             combat_power: 0,
+            level: 0,
+            gear_score: 0,
+            server_id: 0,
+            direct: true,
             is_supporter: false,
         }
     }
