@@ -261,3 +261,5 @@ kbd { font: 700 11px var(--num); letter-spacing: .06em; padding: 2px 7px; border
   .tabs { flex-direction: row; padding: 6px 8px; }
   .side-foot { margin: 0 0 0 auto; padding: 8px 14px; border: 0; }
 }
+.update-banner { width: 100%; }
+.update-banner[hidden] { display: none; }

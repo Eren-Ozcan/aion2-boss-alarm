@@ -4,7 +4,7 @@
 const X = {
   en: {
     welcomeTitle: "Before you start",
-    welcomeLead: "AION2 Boss Alarm is a fan-made helper. Please read this once.",
+    welcomeLead: "BellMeter is a fan-made helper. Please read this once.",
     points: [
       ["ok", "It only listens. The app reads your own game's network traffic through Npcap, and nothing else. It sends nothing to the game, and does not touch game files or memory."],
       ["ok", "Everything stays on your PC. Timers, fights and settings are stored locally. Nothing is uploaded."],
@@ -14,7 +14,7 @@ const X = {
     consent: "I have read this and I use the app at my own risk.",
     go: "Start using the app",
     guideTitle: "Npcap is needed",
-    guideLead: "Boss Alarm reads game traffic with Npcap, a free packet capture tool. Set it up once:",
+    guideLead: "BellMeter reads game traffic with Npcap, a free packet capture tool. Set it up once:",
     s1: "Open the Npcap site and download the installer.",
     s2: "Run it and tick “Install Npcap in WinPcap API-compatible Mode”, then finish the setup.",
     s3: "Come back here and press Retry.",
@@ -27,12 +27,14 @@ const X = {
     version: (v) => `Version ${v}`,
     checkUpdate: "Check for updates",
     upToDate: "You are up to date.",
-    updateFound: (v) => `Version ${v} found, installing…`,
+    updateFound: (v) => `Version ${v} is available`,
+    updateInstall: (v) => `Update to ${v}`,
+    updating: "Downloading the update…",
     updateFail: "Update check failed.",
   },
   tr: {
     welcomeTitle: "Başlamadan önce",
-    welcomeLead: "AION2 Boss Alarm hayran yapımı bir yardımcı araçtır. Lütfen bir kez oku.",
+    welcomeLead: "BellMeter hayran yapımı bir yardımcı araçtır. Lütfen bir kez oku.",
     points: [
       ["ok", "Sadece dinler. Uygulama, kendi oyununun ağ trafiğini Npcap ile okur, başka bir şey yapmaz. Oyuna hiçbir şey göndermez, oyun dosyalarına ve belleğine dokunmaz."],
       ["ok", "Her şey bilgisayarında kalır. Süreler, savaşlar ve ayarlar yerelde saklanır. Hiçbir şey yüklenmez."],
@@ -42,7 +44,7 @@ const X = {
     consent: "Okudum, uygulamayı kendi sorumluluğumda kullanıyorum.",
     go: "Uygulamayı kullanmaya başla",
     guideTitle: "Npcap gerekli",
-    guideLead: "Boss Alarm oyun trafiğini Npcap ile okur, ücretsiz bir paket yakalama aracıdır. Bir kez kur:",
+    guideLead: "BellMeter oyun trafiğini Npcap ile okur, ücretsiz bir paket yakalama aracıdır. Bir kez kur:",
     s1: "Npcap sitesini aç ve kurulum dosyasını indir.",
     s2: "Çalıştır ve “Install Npcap in WinPcap API-compatible Mode” kutusunu işaretle, kurulumu bitir.",
     s3: "Buraya dön ve Yeniden dene'ye bas.",
@@ -55,7 +57,9 @@ const X = {
     version: (v) => `Sürüm ${v}`,
     checkUpdate: "Güncellemeleri denetle",
     upToDate: "Uygulama güncel.",
-    updateFound: (v) => `${v} sürümü bulundu, kuruluyor…`,
+    updateFound: (v) => `${v} sürümü hazır`,
+    updateInstall: (v) => `${v} sürümüne güncelle`,
+    updating: "Güncelleme indiriliyor…",
     updateFail: "Güncelleme denetlenemedi.",
   },
 }[typeof lang !== "undefined" ? lang : "en"];
@@ -147,7 +151,7 @@ function fightExport(kind, record) {
     return { name: `${exportStamp(rec)}.csv`, content: "﻿" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n" };
   }
   const out = {
-    app: "AION2 Boss Alarm",
+    app: "BellMeter",
     boss: rec.bossName,
     startedAt: new Date(rec.startTimeMs).toISOString(),
     durationMs: rec.durationMs,
@@ -228,15 +232,24 @@ document.querySelectorAll("button.ext[data-url]").forEach((b) => {
 });
 
 // ---- in-app update ----
+// A found update is announced and waits for the click; nothing installs on its own.
+const updBanner = document.getElementById("updateBanner");
 async function checkUpdate(silent) {
   try {
     const update = await window.__TAURI__.updater.check();
     if (!update) { if (!silent) toast(X.upToDate); return; }
     toast(X.updateFound(update.version));
-    await update.downloadAndInstall();
+    updBanner.textContent = X.updateInstall(update.version);
+    updBanner.hidden = false;
+    updBanner.onclick = async () => {
+      updBanner.disabled = true;
+      toast(X.updating);
+      try { await update.downloadAndInstall(); } catch { updBanner.disabled = false; toast(X.updateFail); }
+    };
   } catch { if (!silent) toast(X.updateFail); }
 }
 const updBtn = document.getElementById("checkUpdate");
 updBtn.textContent = X.checkUpdate;
 updBtn.onclick = () => checkUpdate(false);
 setTimeout(() => checkUpdate(true), 8000);
+setInterval(() => checkUpdate(true), 6 * 3600 * 1000);
