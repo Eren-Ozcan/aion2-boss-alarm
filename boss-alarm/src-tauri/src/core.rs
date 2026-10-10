@@ -38,6 +38,10 @@ struct StoredTimer {
 struct Stored {
     alarms: HashMap<u32, AlarmConfig>,
     timers: HashMap<u32, StoredTimer>,
+    /// Server clock minus local clock at the last sync. Kept so timers read
+    /// right after a restart, before the game connection is seen again.
+    #[serde(default)]
+    offset_ms: i64,
 }
 
 #[derive(Clone, Serialize)]
@@ -97,9 +101,9 @@ impl Core {
             .unwrap_or_default();
         Self {
             path,
+            offset_ms: stored.offset_ms,
             stored,
             status: Status::Starting,
-            offset_ms: 0,
             last_list_local_ms: None,
             fired: HashSet::new(),
         }
@@ -139,6 +143,7 @@ impl Core {
             );
         }
         self.last_list_local_ms = Some(local_ms);
+        self.stored.offset_ms = self.offset_ms;
         self.save();
     }
 
@@ -261,5 +266,28 @@ mod tests {
         let s = c.snapshot();
         let b = s.bosses.iter().find(|b| b.id == 111005).unwrap();
         assert_eq!(b.respawn_local_ms, Some(1_000_000_060_000));
+    }
+
+    #[test]
+    fn timers_alarms_and_clock_offset_survive_a_restart() {
+        let path = std::env::temp_dir().join(format!("boss-alarm-restart-{}.json", std::process::id()));
+        let _ = std::fs::remove_file(&path);
+        let t0 = 1_000_000_000_000u64;
+        {
+            let mut c = Core::load(path.clone());
+            c.set_alarm(111006, AlarmConfig { enabled: true, minutes: vec![5, 0] });
+            c.note_server_time(t0 + 10_000, t0); // server 10 s ahead
+            c.apply_list(&list(111006, t0 + 3_600_000), t0);
+        } // app closed
+
+        // Two hours later, before the game connection is seen again.
+        let c = Core::load(path.clone());
+        let s = c.snapshot();
+        let b = s.bosses.iter().find(|b| b.id == 111006).unwrap();
+        assert!(b.alarm.enabled);
+        assert_eq!(b.respawn_local_ms, Some(t0 as i64 + 3_590_000)); // offset kept
+        assert!(!b.spawned);
+        assert_eq!(b.seen_local_ms, Some(t0));
+        let _ = std::fs::remove_file(&path);
     }
 }
