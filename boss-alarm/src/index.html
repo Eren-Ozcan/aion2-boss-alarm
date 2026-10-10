@@ -4,115 +4,206 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AION2 Boss Alarm</title>
+  <link rel="stylesheet" href="fonts.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <div class="title">
-      <h1 data-i18n="appName">AION2 Boss Alarm</h1>
-      <span id="status" class="chip" role="status"></span>
-    </div>
-    <p id="hint" class="hint"></p>
-    <div id="setup" class="setup" hidden></div>
-  </header>
+  <div class="shell">
+    <aside class="side">
+      <div class="brand">
+        <img src="assets/app-icon.png" alt="" width="38" height="38">
+        <div>
+          <div class="brand-name">AION2</div>
+          <div class="brand-sub">BOSS ALARM</div>
+        </div>
+      </div>
+      <div class="side-rule" aria-hidden="true"></div>
+      <nav class="tabs" role="tablist">
+        <button id="tabBosses" class="tab active" role="tab" aria-selected="true"><i class="mark"></i><span class="lbl" data-i18n="tabBosses"></span><span id="metaBosses" class="meta"></span></button>
+        <button id="tabDps" class="tab" role="tab" aria-selected="false"><i class="mark"></i><span class="lbl" data-i18n="tabDps"></span><span id="metaDps" class="meta"></span></button>
+        <button id="tabHistory" class="tab" role="tab" aria-selected="false"><i class="mark"></i><span class="lbl" data-i18n="tabHistory"></span><span id="metaHist" class="meta"></span></button>
+        <button id="tabSettings" class="tab" role="tab" aria-selected="false"><i class="mark"></i><span class="lbl" data-i18n="tabSettings"></span><span class="meta"></span></button>
+      </nav>
+      <div class="side-foot">
+        <span id="status" class="chip" role="status"></span>
+        <div class="side-row">
+          <span id="appVersion"></span>
+          <button id="openLog" class="link" type="button"></button>
+        </div>
+        <div class="side-row side-links">
+          <button class="link ext" type="button" data-url="https://erenozcan.dev">erenozcan.dev</button>
+          <button class="link ext" type="button" data-url="https://github.com/Eren-Ozcan">GitHub</button>
+        </div>
+      </div>
+    </aside>
 
-  <nav class="tabs" role="tablist">
-    <button id="tabBosses" class="tab active" role="tab" aria-selected="true" data-i18n="tabBosses"></button>
-    <button id="tabDps" class="tab" role="tab" aria-selected="false" data-i18n="tabDps"></button>
-    <button id="tabHistory" class="tab" role="tab" aria-selected="false" data-i18n="tabHistory"></button>
-  </nav>
+    <main class="main">
+      <header class="top">
+        <div class="top-text">
+          <h1 id="tabTitle"></h1>
+          <p id="tabHint" class="top-hint"></p>
+        </div>
+        <button id="overlayBtn" class="btn gold" type="button" data-i18n="overlay"></button>
+      </header>
 
-  <div id="viewBosses">
-  <section class="toolbar" aria-label="Sound and alarms">
-    <div class="row">
-      <button id="enableAll" class="btn" data-i18n="enableAll"></button>
-      <button id="disableAll" class="btn" data-i18n="disableAll"></button>
-    </div>
-    <div class="row sound">
-      <label class="btn file">
-        <span data-i18n="chooseSound"></span>
-        <input id="soundFile" type="file" accept="audio/*" hidden>
-      </label>
-      <button id="resetSound" class="btn ghost" data-i18n="defaultSound"></button>
-      <button id="testSound" class="btn" data-i18n="test"></button>
-      <label class="vol"><span data-i18n="volume"></span>
-        <input id="volume" type="range" min="0" max="100" value="80">
-      </label>
-    </div>
-    <div id="soundName" class="muted"></div>
-  </section>
+      <div class="content">
+        <div id="setup" class="setup" hidden></div>
 
-  <main>
-    <h2 data-i18n="field"></h2>
-    <div id="field" class="list"></div>
-    <h2 data-i18n="abyss"></h2>
-    <div id="abyss" class="list"></div>
-  </main>
+        <div id="viewBosses">
+          <p id="hint" class="hint"></p>
+          <section class="toolbar" aria-label="Sound and alarms">
+            <div class="row">
+              <button id="enableAll" class="btn primary" data-i18n="enableAll"></button>
+              <button id="disableAll" class="btn" data-i18n="disableAll"></button>
+              <label class="vol"><span data-i18n="volume"></span>
+                <input id="volume" type="range" min="0" max="100" value="80">
+              </label>
+            </div>
+            <div class="row sound-row">
+              <div class="sound-info">
+                <span class="cap" data-i18n="soundCap"></span>
+                <span id="soundName" class="sound-name"></span>
+              </div>
+              <label class="btn file gold">
+                <span data-i18n="chooseSound"></span>
+                <input id="soundFile" type="file" accept="audio/*" hidden>
+              </label>
+              <button id="resetSound" class="btn ghost" data-i18n="defaultSound"></button>
+              <button id="testSound" class="btn" data-i18n="test"></button>
+            </div>
+            <div class="row sound-row">
+              <div class="sound-info">
+                <span class="cap" data-i18n="eventSoundCap"></span>
+                <span id="eventSoundName" class="sound-name"></span>
+              </div>
+              <label class="btn file gold">
+                <span data-i18n="chooseSound"></span>
+                <input id="eventSoundFile" type="file" accept="audio/*" hidden>
+              </label>
+              <button id="eventResetSound" class="btn ghost" data-i18n="defaultSound"></button>
+              <button id="eventTestSound" class="btn" data-i18n="test"></button>
+            </div>
+          </section>
+
+          <h2 data-i18n="field"></h2>
+          <div id="field" class="grid"></div>
+          <h2 data-i18n="abyss"></h2>
+          <div id="abyss" class="grid"></div>
+          <h2><span data-i18n="events"></span>
+            <label class="srv"><span data-i18n="serverTime"></span> UTC<input id="serverOffset" class="offset-input" type="number" min="-12" max="14" step="1" aria-label="Server time offset"></label>
+          </h2>
+          <div id="events" class="grid"></div>
+        </div>
+
+        <section id="viewDps" hidden>
+          <div class="row bar-row">
+            <label class="vol"><span data-i18n="targetMode"></span>
+              <select id="targetMode" class="select">
+                <option value="bossTargets" data-i18n="modeBoss"></option>
+                <option value="lastHitByMe" data-i18n="modeLast"></option>
+                <option value="allTargets" data-i18n="modeAll"></option>
+                <option value="trainTargets" data-i18n="modeTrain"></option>
+              </select>
+            </label>
+            <label class="vol"><span data-i18n="charName"></span>
+              <input id="charName" class="text-input" type="text" maxlength="24" autocomplete="off" spellcheck="false">
+            </label>
+            <button id="charSave" class="btn" data-i18n="save"></button>
+            <button id="recBtn" class="btn rec" data-i18n="recStart"></button>
+          </div>
+          <p id="recInfo" class="muted"></p>
+          <div class="panel">
+            <div id="dpsTarget" class="dps-target"></div>
+            <div id="hp" class="hp" hidden><div id="hpFill" class="hp-fill"></div></div>
+          </div>
+          <div id="dpsRows" class="dps-rows"></div>
+          <details id="chartBox" class="chart-box">
+            <summary data-i18n="timeline"></summary>
+            <div id="chart"></div>
+          </details>
+          <p id="dpsEmpty" class="muted" data-i18n="dpsEmpty"></p>
+        </section>
+
+        <section id="viewSettings" hidden>
+          <div class="sets">
+            <div class="set">
+              <h3 data-i18n="setStartup"></h3>
+              <label class="opt"><span data-i18n="setAutostart"></span><span class="switch"><input id="autostart" type="checkbox"><span></span></span></label>
+              <label class="opt"><span data-i18n="setOverlayStart"></span><span class="switch"><input id="overlayStart" type="checkbox"><span></span></span></label>
+            </div>
+            <div class="set">
+              <h3 data-i18n="setAlarms"></h3>
+              <label class="opt"><span data-i18n="setMute"></span><span class="switch"><input id="muteAll" type="checkbox"><span></span></span></label>
+              <p class="muted" data-i18n="setMuteHint"></p>
+            </div>
+            <div class="set">
+              <h3 data-i18n="setLanguage"></h3>
+              <select id="langSel" class="select">
+                <option value="auto" data-i18n="langAuto"></option>
+                <option value="en">English</option>
+                <option value="tr">T&uuml;rk&ccedil;e</option>
+              </select>
+            </div>
+            <div class="set">
+              <h3 data-i18n="setOverlay"></h3>
+              <div class="row">
+                <button id="setLock" class="btn" type="button" data-i18n="setLock"></button>
+                <button id="setResetPos" class="btn" type="button" data-i18n="setResetPos"></button>
+              </div>
+              <ul class="keys">
+                <li><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>K</kbd><span data-i18n="keyLock"></span></li>
+                <li><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>J</kbd><span data-i18n="keyShow"></span></li>
+                <li><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>M</kbd><span data-i18n="keyMute"></span></li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section id="viewHistory" hidden>
+          <div id="histListBox">
+            <div id="histList" class="hist-list"></div>
+            <p id="histEmpty" class="muted" data-i18n="histEmpty"></p>
+          </div>
+          <div id="histDetail" hidden>
+            <div class="row">
+              <button id="histBack" class="btn" data-i18n="histBack"></button>
+              <button id="histDelete" class="btn ghost" data-i18n="histDelete"></button>
+              <span class="spacer"></span>
+              <button id="exportJson" class="btn" type="button">JSON</button>
+              <button id="exportCsv" class="btn" type="button">CSV</button>
+            </div>
+            <p id="histTitle" class="muted"></p>
+            <div id="histChart"></div>
+            <div id="histRows" class="dps-rows"></div>
+          </div>
+        </section>
+      </div>
+    </main>
   </div>
 
-  <section id="viewDps" hidden>
-    <div class="row">
-      <label class="vol"><span data-i18n="targetMode"></span>
-        <select id="targetMode" class="select">
-          <option value="bossTargets" data-i18n="modeBoss"></option>
-          <option value="lastHitByMe" data-i18n="modeLast"></option>
-          <option value="allTargets" data-i18n="modeAll"></option>
-          <option value="trainTargets" data-i18n="modeTrain"></option>
-        </select>
-      </label>
-    </div>
-    <div class="row">
-      <label class="vol"><span data-i18n="charName"></span>
-        <input id="charName" class="text-input" type="text" maxlength="24" autocomplete="off" spellcheck="false">
-      </label>
-      <button id="charSave" class="btn" data-i18n="save"></button>
-    </div>
-    <div class="row">
-      <button id="overlayBtn" class="btn" data-i18n="overlay"></button>
-      <label class="vol"><span data-i18n="overlayOpacity"></span>
-        <input id="overlayOpacity" type="range" min="0" max="100" value="40">
-      </label>
-      <label class="vol"><span data-i18n="theme"></span>
-        <select id="themeSel" class="select">
-          <option value="auto" data-i18n="themeAuto"></option>
-          <option value="light" data-i18n="themeLight"></option>
-          <option value="dark" data-i18n="themeDark"></option>
-        </select>
-      </label>
-    </div>
-    <div class="row">
-      <button id="recBtn" class="btn" data-i18n="recStart"></button>
-    </div>
-    <p id="recInfo" class="muted"></p>
-    <div id="hp" class="hp" hidden><div id="hpFill" class="hp-fill"></div></div>
-    <p id="dpsTarget" class="muted"></p>
-    <div id="dpsRows" class="dps-rows"></div>
-    <details id="chartBox" class="chart-box">
-      <summary data-i18n="timeline"></summary>
-      <div id="chart"></div>
-    </details>
-    <p id="dpsEmpty" class="muted" data-i18n="dpsEmpty"></p>
-  </section>
-
-  <section id="viewHistory" hidden>
-    <div id="histListBox">
-      <div id="histList" class="hist-list"></div>
-      <p id="histEmpty" class="muted" data-i18n="histEmpty"></p>
-    </div>
-    <div id="histDetail" hidden>
-      <div class="row">
-        <button id="histBack" class="btn" data-i18n="histBack"></button>
-        <button id="histDelete" class="btn ghost" data-i18n="histDelete"></button>
+  <div id="welcome" class="modal-backdrop" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+      <div class="modal-accent" aria-hidden="true"></div>
+      <div class="modal-body">
+        <div class="modal-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.2 8.2-8 9-4.8-.8-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
+        </div>
+        <h2 id="welcomeTitle" class="modal-title"></h2>
+        <p id="welcomeLead" class="modal-lead"></p>
+        <ul id="welcomePoints" class="points"></ul>
+        <label class="consent">
+          <input id="welcomeCheck" type="checkbox">
+          <span id="welcomeConsent"></span>
+        </label>
+        <button id="welcomeGo" class="btn primary wide" type="button" disabled></button>
       </div>
-      <p id="histTitle" class="muted"></p>
-      <div id="histChart"></div>
-      <div id="histRows" class="dps-rows"></div>
     </div>
-  </section>
+  </div>
 
   <div id="toasts" class="toasts" aria-live="assertive"></div>
   <script src="skill_icons.js"></script>
   <script src="chart.js"></script>
   <script src="main.js"></script>
+  <script src="extras.js"></script>
 </body>
 </html>

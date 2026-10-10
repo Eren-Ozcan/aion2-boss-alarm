@@ -11,12 +11,38 @@ const TEXT = {
     tabDps: "DPS",
     charName: "Character name",
     save: "Save",
-    overlay: "Overlay on/off",
-    overlayOpacity: "Overlay opacity",
-    theme: "Theme",
-    themeAuto: "Auto",
-    themeLight: "Light",
-    themeDark: "Dark",
+    overlay: "Toggle overlay",
+    tabSettings: "Settings",
+    setStartup: "Startup",
+    setAutostart: "Start with Windows",
+    setOverlayStart: "Open the overlay at startup",
+    setAlarms: "Alarms",
+    setMute: "Mute all alarms",
+    setMuteHint: "Timers keep running; nothing rings while muted.",
+    setLanguage: "Language",
+    langAuto: "Automatic (system)",
+    setOverlay: "Overlay",
+    setLock: "Lock / unlock overlay",
+    setResetPos: "Reset overlay position",
+    keyLock: "Lock the overlay, clicks pass through to the game",
+    keyShow: "Show or hide the overlay",
+    keyMute: "Mute or unmute alarms",
+    soundCap: "Boss alarm sound",
+    eventSoundCap: "Event alarm sound",
+    events: "Events",
+    serverTime: "Server time",
+    every: "Every hour",
+    nextAt: "Next",
+    approaching: "Approaching",
+    waiting: "Waiting",
+    alarmOn: (m) => `ALARM · ${m} MIN`,
+    alarmOff: "ALARM OFF",
+    titles: {
+      bosses: ["Bosses", "Timers sync when you open the in-game map or boss list. Alarms keep working with the map closed."],
+      dps: ["DPS meter", "Click a player for a per-skill breakdown with crit, back and double rates."],
+      history: ["Fight history", "Boss fights are saved automatically shortly after they end. Records stay on this PC."],
+      settings: ["Settings", "Startup, alarms, language and the overlay. The overlay\u2019s own options are under its gear icon."],
+    },
     timeline: "DPS timeline",
     tabHistory: "History",
     histEmpty: "No saved fights yet. Boss fights are saved automatically a short while after they end.",
@@ -58,6 +84,7 @@ const TEXT = {
     spawned: "Spawned",
     unknown: "Time unknown",
     spawnedAgo: (a) => `Spawned ${a} ago (now unknown)`,
+    spawnedUp: (a) => `Spawned ${a} ago`,
     spawnedStale: (a) => `Spawned (seen ${a} ago, now unknown)`,
     never: "Not seen yet",
     minutesTip: "Minutes before respawn, e.g. 5, 0 (0 = at respawn)",
@@ -84,11 +111,37 @@ const TEXT = {
     charName: "Karakter adı",
     save: "Kaydet",
     overlay: "Overlay aç/kapat",
-    overlayOpacity: "Overlay şeffaflığı",
-    theme: "Tema",
-    themeAuto: "Otomatik",
-    themeLight: "Açık",
-    themeDark: "Koyu",
+    tabSettings: "Ayarlar",
+    setStartup: "Başlangıç",
+    setAutostart: "Windows ile başlat",
+    setOverlayStart: "Açılışta overlay'i aç",
+    setAlarms: "Alarmlar",
+    setMute: "Tüm alarmları sustur",
+    setMuteHint: "Süreler işlemeye devam eder; sessizken hiçbir şey çalmaz.",
+    setLanguage: "Dil",
+    langAuto: "Otomatik (sistem)",
+    setOverlay: "Overlay",
+    setLock: "Overlay'i kilitle / aç",
+    setResetPos: "Overlay konumunu sıfırla",
+    keyLock: "Overlay'i kilitle, tıklamalar oyuna geçer",
+    keyShow: "Overlay'i göster veya gizle",
+    keyMute: "Alarmları sustur veya aç",
+    soundCap: "Boss alarm sesi",
+    eventSoundCap: "Etkinlik alarm sesi",
+    events: "Etkinlikler",
+    serverTime: "Sunucu saati",
+    every: "Her saat",
+    nextAt: "Sonraki",
+    approaching: "Yaklaşıyor",
+    waiting: "Bekliyor",
+    alarmOn: (m) => `ALARM · ${m} DK`,
+    alarmOff: "ALARM KAPALI",
+    titles: {
+      bosses: ["Bosslar", "Süreler oyundaki haritayı veya boss listesini açtığında senkronlanır. Harita kapalıyken de alarmlar çalışır."],
+      dps: ["DPS ölçer", "Bir oyuncuya tıkla: beceri dökümü, kritik, arka ve çift vuruş oranları."],
+      history: ["Savaş geçmişi", "Boss savaşları bittikten kısa süre sonra otomatik kaydedilir. Kayıtlar bu bilgisayarda kalır."],
+      settings: ["Ayarlar", "Başlangıç, alarmlar, dil ve overlay. Overlay'in kendi seçenekleri üstündeki dişli simgesinde."],
+    },
     timeline: "DPS zaman çizelgesi",
     tabHistory: "Geçmiş",
     histEmpty: "Kayıtlı savaş yok. Boss savaşları bittikten kısa süre sonra otomatik kaydedilir.",
@@ -130,6 +183,7 @@ const TEXT = {
     spawned: "Doğdu",
     unknown: "Süre bilinmiyor",
     spawnedAgo: (a) => `${a} önce doğdu (şu an bilinmiyor)`,
+    spawnedUp: (a) => `${a} önce doğdu`,
     spawnedStale: (a) => `Doğmuştu (${a} önce görüldü, şu an bilinmiyor)`,
     never: "Henüz görülmedi",
     minutesTip: "Doğmadan kaç dakika önce, örn. 5, 0 (0 = doğduğu an)",
@@ -150,7 +204,8 @@ const TEXT = {
     ago: (s) => (s < 60 ? `${s} sn` : s < 3600 ? `${Math.floor(s / 60)} dk` : `${Math.floor(s / 3600)} sa ${Math.floor((s % 3600) / 60)} dk`),
   },
 };
-const lang = (navigator.language || "en").toLowerCase().startsWith("tr") ? "tr" : "en";
+const chosenLang = (() => { try { return localStorage.getItem("lang"); } catch { return null; } })();
+const lang = chosenLang === "tr" || chosenLang === "en" ? chosenLang : (navigator.language || "en").toLowerCase().startsWith("tr") ? "tr" : "en";
 const T = TEXT[lang];
 document.documentElement.lang = lang;
 for (const el of document.querySelectorAll("[data-i18n]")) el.textContent = T[el.dataset.i18n];
@@ -164,7 +219,8 @@ const store = {
 
 // ---------- sound ----------
 let audioCtx = null;
-let customAudio = null; // HTMLAudioElement
+const customAudio = { boss: null, event: null }; // HTMLAudioElement per kind
+const SOUND_KEYS = { boss: ["soundData", "soundName", "soundName"], event: ["eventSoundData", "eventSoundName", "eventSoundName"] };
 const volume = () => Math.min(1, Math.max(0, Number(store.get("volume") ?? 80) / 100));
 
 function beep(ctx, at, freq, len, vol) {
@@ -180,34 +236,41 @@ function beep(ctx, at, freq, len, vol) {
   o.stop(at + len + 0.05);
 }
 
-function playDefault() {
+// Bosses ring a two-tone double beep; events a rising chime, so they can be told apart by ear.
+function playDefault(kind = "boss") {
   audioCtx ??= new AudioContext();
   const ctx = audioCtx;
   if (ctx.state === "suspended") ctx.resume();
   const t = ctx.currentTime + 0.02;
   const v = volume() * 0.5;
-  [880, 1175, 880, 1175].forEach((f, i) => beep(ctx, t + i * 0.28, f, 0.22, v));
+  if (kind === "event") [523, 659, 784, 1047].forEach((f, i) => beep(ctx, t + i * 0.16, f, 0.34, v));
+  else [880, 1175, 880, 1175].forEach((f, i) => beep(ctx, t + i * 0.28, f, 0.22, v));
 }
 
-function playAlarm() {
-  if (customAudio) {
-    customAudio.volume = volume();
-    customAudio.currentTime = 0;
-    customAudio.play().catch(playDefault);
+function playAlarm(kind = "boss") {
+  const audio = customAudio[kind];
+  if (audio) {
+    audio.volume = volume();
+    audio.currentTime = 0;
+    audio.play().catch(() => playDefault(kind));
   } else {
-    playDefault();
+    playDefault(kind);
   }
 }
 
 function loadCustomSound() {
-  const data = store.get("soundData");
-  const name = store.get("soundName");
-  if (data) {
-    customAudio = new Audio(data);
-    $("soundName").textContent = T.soundCustom(name || "custom");
-  } else {
-    customAudio = null;
-    $("soundName").textContent = T.soundDefault;
+  for (const kind of ["boss", "event"]) {
+    const [dataKey, nameKey] = SOUND_KEYS[kind];
+    const data = store.get(dataKey);
+    const name = store.get(nameKey);
+    const label = $(kind === "boss" ? "soundName" : "eventSoundName");
+    if (data) {
+      customAudio[kind] = new Audio(data);
+      label.textContent = T.soundCustom(name || "custom");
+    } else {
+      customAudio[kind] = null;
+      label.textContent = T.soundDefault;
+    }
   }
 }
 
@@ -241,21 +304,26 @@ function parseMinutes(text) {
   return out.sort((a, b) => b - a);
 }
 
+// What a boss card shows: the big figure, the line under it, a colour class and the progress bar.
 function bossState(b, now) {
   const secs = (ms) => Math.max(0, Math.round(ms / 1000));
+  const since = (t) => T.ago(secs(now - t));
   if (b.spawned) {
     // Up when last seen; after a while we cannot know whether it was killed.
     const age = b.seen_local_ms ? now - b.seen_local_ms : 0;
-    return age > 60_000
-      ? { text: T.spawnedStale(T.ago(secs(age))), cls: "unknown" }
-      : { text: T.spawned, cls: "spawned" };
+    const spawnedAgo = b.spawned_at_local_ms != null ? since(b.spawned_at_local_ms) : null;
+    if (age > 60_000) {
+      return { time: T.spawned, status: spawnedAgo ? T.spawnedAgo(spawnedAgo) : T.spawnedStale(T.ago(secs(age))), cls: "up-unknown", prog: 100 };
+    }
+    return { time: T.spawned, status: spawnedAgo ? T.spawnedUp(spawnedAgo) : T.spawned, cls: "spawned", prog: 100 };
   }
-  if (b.respawn_local_ms == null) return { text: b.seen_local_ms ? T.unknown : T.never, cls: "unknown" };
+  if (b.respawn_local_ms == null) return { time: "--:--", status: b.seen_local_ms ? T.unknown : T.never, cls: "unknown", prog: 0 };
   const left = b.respawn_local_ms - now;
   // The respawn time passed while we were not watching: it did spawn, but
   // whether it is still up is unknown until the map is opened again.
-  if (left <= 0) return { text: T.spawnedAgo(T.ago(secs(-left))), cls: "unknown" };
-  return { text: fmt(left), cls: left < 5 * 60_000 ? "soon" : "" };
+  if (left <= 0) return { time: T.spawned, status: T.spawnedAgo(since(b.respawn_local_ms)), cls: "up-unknown", prog: 100 };
+  const soon = left < 10 * 60_000;
+  return { time: fmt(left), status: soon ? T.approaching : T.waiting, cls: left < 5 * 60_000 ? "soon" : "", prog: Math.max(2, 100 - (left / 21_600_000) * 100) };
 }
 
 function buildRow(b) {
@@ -263,22 +331,12 @@ function buildRow(b) {
   row.className = "boss";
   row.dataset.id = b.id;
 
-  const name = document.createElement("div");
+  const top = document.createElement("div");
+  top.className = "b-top";
+  const name = document.createElement("span");
   name.className = "name";
   name.textContent = b.name;
-
-  const state = document.createElement("div");
-  state.className = "state";
-
-  const controls = document.createElement("div");
-  controls.className = "controls";
-
-  const mins = document.createElement("input");
-  mins.className = "minutes";
-  mins.type = "text";
-  mins.inputMode = "numeric";
-  mins.title = T.minutesTip;
-  mins.setAttribute("aria-label", `${b.name}: ${T.minutesTip}`);
+  name.title = b.name;
 
   const sw = document.createElement("label");
   sw.className = "switch";
@@ -287,6 +345,25 @@ function buildRow(b) {
   cb.setAttribute("aria-label", b.name);
   const track = document.createElement("span");
   sw.append(cb, track);
+  top.append(name, sw);
+
+  const mid = document.createElement("div");
+  mid.className = "b-mid";
+  const state = document.createElement("span");
+  state.className = "state";
+  const mins = document.createElement("input");
+  mins.className = "minutes";
+  mins.type = "text";
+  mins.inputMode = "numeric";
+  mins.title = T.minutesTip;
+  mins.setAttribute("aria-label", `${b.name}: ${T.minutesTip}`);
+  mid.append(state, mins);
+
+  const bar = document.createElement("div");
+  bar.className = "b-bar";
+  bar.append(document.createElement("i"));
+  const status = document.createElement("div");
+  status.className = "b-status";
 
   const save = () => {
     const minutes = parseMinutes(mins.value);
@@ -297,8 +374,7 @@ function buildRow(b) {
   mins.addEventListener("blur", () => { editing = false; save(); });
   mins.addEventListener("keydown", (e) => { if (e.key === "Enter") mins.blur(); });
 
-  controls.append(mins, sw);
-  row.append(name, state, controls);
+  row.append(top, mid, bar, status);
   return row;
 }
 
@@ -317,9 +393,41 @@ function render() {
     row.classList.toggle("on", b.alarm.enabled);
     const st = bossState(b, now);
     const el = row.querySelector(".state");
-    el.textContent = st.text;
-    el.className = "state " + st.cls;
+    el.textContent = st.time;
+    el.className = "state " + (st.cls === "soon" && !b.alarm.enabled ? "" : st.cls);
+    row.classList.toggle("is-up", st.cls === "spawned" || st.cls === "up-unknown");
+    row.classList.toggle("is-soon", st.cls === "soon" && b.alarm.enabled);
+    row.querySelector(".b-bar i").style.width = `${st.prog}%`;
+    row.querySelector(".b-status").textContent = b.alarm.enabled ? `${st.status} · ${T.alarmOn(b.alarm.minutes.join(", "))}` : `${st.status} · ${T.alarmOff}`;
   }
+  // Scheduled events: counted down to the next start, and alarmed like a boss.
+  const evBox = $("events");
+  const clock = (ms) => new Date(ms).toLocaleTimeString(lang === "tr" ? "tr-TR" : undefined, { hour: "2-digit", minute: "2-digit" });
+  for (const e of snap.events ?? []) {
+    let row = evBox.querySelector(`[data-id="${e.id}"]`);
+    if (!row) { row = buildRow(e); row.classList.add("event"); evBox.append(row); }
+    const cb = row.querySelector("input[type=checkbox]");
+    const mins = row.querySelector(".minutes");
+    cb.checked = e.alarm.enabled;
+    mins.disabled = !e.alarm.enabled;
+    if (document.activeElement !== mins) mins.value = e.alarm.minutes.join(", ");
+    row.classList.toggle("on", e.alarm.enabled);
+    const left = e.next_local_ms - now;
+    const soon = left < 5 * 60_000;
+    const el = row.querySelector(".state");
+    el.textContent = fmt(left);
+    el.className = "state " + (soon && e.alarm.enabled ? "soon" : "") + (el.textContent.length > 9 ? " small" : "");
+    row.classList.toggle("is-soon", soon && e.alarm.enabled);
+    row.querySelector(".b-bar i").style.width = `${Math.max(2, 100 - (left / e.period_ms) * 100)}%`;
+    const when = e.rule.startsWith(":") ? `${T.every} ${e.rule}` : e.rule;
+    row.querySelector(".b-status").textContent = `${when} · ${T.nextAt} ${clock(e.next_local_ms)}` + (e.alarm.enabled ? ` · ${T.alarmOn(e.alarm.minutes.join(", "))}` : ` · ${T.alarmOff}`);
+  }
+  if (document.activeElement !== $("serverOffset")) $("serverOffset").value = snap.server_offset_h ?? 9;
+
+  if (document.activeElement !== $("muteAll")) $("muteAll").checked = !!snap.muted;
+  if (document.activeElement !== $("overlayStart")) $("overlayStart").checked = snap.overlay_at_startup !== false;
+  const on = snap.bosses.filter((x) => x.alarm.enabled).length;
+  $("metaBosses").textContent = String(on);
   renderStatus(now);
 }
 
@@ -337,22 +445,11 @@ function renderStatus(now) {
   chip.textContent = text;
   chip.className = "chip " + cls;
 
+  setup.classList.remove("guide");
   if (s.kind === "NpcapMissing") {
     setup.hidden = false;
-    setup.replaceChildren();
-    const p = document.createElement("div");
-    p.append(T.npcap + " ");
-    const a = document.createElement("a");
-    a.href = "https://npcap.com";
-    a.target = "_blank";
-    a.rel = "noreferrer";
-    a.textContent = "npcap.com";
-    p.append(a, " " + T.npcapOpts + " ");
-    const btn = document.createElement("button");
-    btn.className = "btn";
-    btn.textContent = T.retry;
-    btn.onclick = () => invoke("retry_capture");
-    setup.append(p, btn);
+    // extras.js loads after this file; the next render (1 s) draws the guide.
+    if (typeof renderNpcapGuide === "function") renderNpcapGuide(setup, () => invoke("retry_capture"));
   } else if (s.kind === "CaptureFailed") {
     setup.hidden = false;
     setup.replaceChildren();
@@ -374,28 +471,48 @@ function renderStatus(now) {
 // ---------- wiring ----------
 $("enableAll").onclick = () => invoke("set_all_enabled", { enabled: true });
 $("disableAll").onclick = () => invoke("set_all_enabled", { enabled: false });
-$("testSound").onclick = playAlarm;
-$("resetSound").onclick = () => { store.del("soundData"); store.del("soundName"); loadCustomSound(); };
 $("volume").value = store.get("volume") ?? 80;
 $("volume").oninput = (e) => store.set("volume", e.target.value);
-$("soundFile").onchange = (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  if (file.size > 3 * 1024 * 1024) { toast(T.soundTooBig); return; }
-  const reader = new FileReader();
-  reader.onload = () => {
-    store.set("soundData", reader.result);
-    store.set("soundName", file.name);
-    loadCustomSound();
-    playAlarm();
+function wireSound(kind, ids) {
+  const [dataKey, nameKey] = SOUND_KEYS[kind];
+  $(ids.test).onclick = () => playAlarm(kind);
+  $(ids.reset).onclick = () => { store.del(dataKey); store.del(nameKey); loadCustomSound(); };
+  $(ids.file).onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) { toast(T.soundTooBig); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      store.set(dataKey, reader.result);
+      store.set(nameKey, file.name);
+      loadCustomSound();
+      playAlarm(kind);
+    };
+    reader.readAsDataURL(file);
   };
-  reader.readAsDataURL(file);
+}
+wireSound("boss", { test: "testSound", reset: "resetSound", file: "soundFile" });
+wireSound("event", { test: "eventTestSound", reset: "eventResetSound", file: "eventSoundFile" });
+$("muteAll").onchange = (e) => invoke("set_muted", { muted: e.target.checked });
+$("overlayStart").onchange = (e) => invoke("set_overlay_at_startup", { on: e.target.checked });
+$("autostart").onchange = (e) => invoke("set_autostart", { on: e.target.checked }).catch(() => { e.target.checked = !e.target.checked; });
+invoke("get_autostart").then((on) => { $("autostart").checked = !!on; }).catch(() => {});
+$("langSel").value = chosenLang === "tr" || chosenLang === "en" ? chosenLang : "auto";
+$("langSel").onchange = (e) => {
+  if (e.target.value === "auto") store.del("lang"); else store.set("lang", e.target.value);
+  location.reload();
+};
+$("setLock").onclick = () => invoke("toggle_overlay_lock").catch(() => {});
+$("setResetPos").onclick = () => invoke("reset_overlay_position").catch(() => {});
+$("serverOffset").onchange = (e) => {
+  const h = Math.max(-12, Math.min(14, Math.round(Number(e.target.value))));
+  if (Number.isFinite(h)) invoke("set_server_offset", { hours: h });
 };
 
 listen("snapshot", (e) => { snap = e.payload; render(); });
 listen("alarm", (e) => {
   const a = e.payload;
-  playAlarm();
+  playAlarm(a.kind === "event" ? "event" : "boss");
   toast(`${a.name}: ${T.alarmAt(a.minutes)}`);
 });
 
@@ -405,11 +522,13 @@ setInterval(() => { if (!editing) render(); }, 1000);
 
 
 // ---------- DPS tab ----------
-const views = { bosses: document.getElementById("viewBosses"), dps: document.getElementById("viewDps"), history: document.getElementById("viewHistory") };
-const tabs = { bosses: document.getElementById("tabBosses"), dps: document.getElementById("tabDps"), history: document.getElementById("tabHistory") };
+const views = { bosses: document.getElementById("viewBosses"), dps: document.getElementById("viewDps"), history: document.getElementById("viewHistory"), settings: document.getElementById("viewSettings") };
+const tabs = { bosses: document.getElementById("tabBosses"), dps: document.getElementById("tabDps"), history: document.getElementById("tabHistory"), settings: document.getElementById("tabSettings") };
 let dpsTimer = null;
 
 function showTab(name) {
+  $("tabTitle").textContent = T.titles[name][0];
+  $("tabHint").textContent = T.titles[name][1];
   for (const k of Object.keys(views)) {
     views[k].hidden = k !== name;
     tabs[k].classList.toggle("active", k === name);
@@ -427,6 +546,7 @@ function showTab(name) {
 tabs.bosses.addEventListener("click", () => showTab("bosses"));
 tabs.dps.addEventListener("click", () => showTab("dps"));
 tabs.history.addEventListener("click", () => showTab("history"));
+tabs.settings.addEventListener("click", () => showTab("settings"));
 
 const nf = new Intl.NumberFormat();
 
@@ -571,6 +691,11 @@ async function refreshDps() {
 }
 
 function renderDps(d, entries, details) {
+  // Other players arrive mostly as damage-over-time ticks; they are left out unless the overlay setting shows them.
+  const anyDirect = entries.some((e) => e.p.direct !== false);
+  if (store.get("showPartial") === "0" && anyDirect) entries = entries.filter((e) => e.p.direct !== false || e.id === d.localPlayerId);
+  const shown = entries.reduce((sum, e) => sum + e.p.amount, 0) || 1;
+  for (const e of entries) e.p.damageContribution = (e.p.amount / shown) * 100;
   const box = document.getElementById("dpsRows");
   document.getElementById("dpsEmpty").hidden = entries.length > 0;
   const total = entries.reduce((s, e) => s + e.p.amount, 0);
@@ -767,23 +892,12 @@ recBtn.addEventListener("click", async () => {
   }
 });
 
-// ---------- overlay and theme ----------
+// ---------- overlay ----------
 document.getElementById("overlayBtn").addEventListener("click", () => {
   invoke("toggle_overlay").catch((e) => { document.getElementById("recInfo").textContent = String(e); });
 });
-const opacity = document.getElementById("overlayOpacity");
-opacity.value = store.get("overlayOpacity") ?? "40";
-opacity.addEventListener("input", () => store.set("overlayOpacity", opacity.value));
-
-const themeSel = document.getElementById("themeSel");
-const applyTheme = () => {
-  store.set("theme", themeSel.value);
-  if (themeSel.value === "auto") delete document.documentElement.dataset.theme;
-  else document.documentElement.dataset.theme = themeSel.value;
-};
-themeSel.value = store.get("theme") || "auto";
-themeSel.addEventListener("change", applyTheme);
-applyTheme();
+// The window is always the dark Aether theme; the stored choice of the old selector is dropped.
+store.del("theme");
 
 // ---------- character name ----------
 const charName = document.getElementById("charName");
