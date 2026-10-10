@@ -22,3 +22,5 @@ serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 dps-core = { path = "dps-core" }
 tauri = { version = "2.12.2", features = ["tray-icon"] }
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-autostart = "2"

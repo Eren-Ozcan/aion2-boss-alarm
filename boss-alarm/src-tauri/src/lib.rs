@@ -1,6 +1,8 @@
 mod bosses;
 mod capture;
+mod applog;
 mod core;
+mod events;
 mod parser;
 mod recorder;
 mod stream;
@@ -19,13 +21,18 @@ use dps_core::entity::fight_record::{FightRecord, FightSummary};
 use dps_core::history::fight_history::FightHistoryManager;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder, WindowEvent};
+use tauri::{AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, State, WebviewUrl, WebviewWindowBuilder, WindowEvent};
+use tauri_plugin_autostart::{MacosLauncher, ManagerExt as _};
+use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
 use crate::capture::{now_ms, CaptureError};
 use crate::core::{AlarmConfig, Core, Snapshot, Status};
 use crate::recorder::Recorder;
 
 struct AppState {
+    terms_ok: Arc<AtomicBool>,
+    /// The overlay lets mouse clicks through to the game.
+    locked: Arc<AtomicBool>,
     core: Arc<Mutex<Core>>,
     dps: Arc<Mutex<DpsEngine>>,
     history: Arc<FightHistoryManager>,
@@ -151,6 +158,129 @@ fn open_overlay(app: &AppHandle) -> Result<(), String> {
     builder.build().map(|_| ()).map_err(|e| e.to_string())
 }
 
+/// Let clicks go through the overlay to the game (or take them again).
+fn apply_lock(app: &AppHandle, locked: bool) {
+    if let Some(w) = app.get_webview_window("overlay") {
+        let _ = w.set_ignore_cursor_events(locked);
+    }
+    if let Some(state) = app.try_state::<AppState>() {
+        state.locked.store(locked, Ordering::SeqCst);
+    }
+    let _ = app.emit("overlay-locked", locked);
+}
+
+fn toggle_lock(app: &AppHandle) -> bool {
+    let now = !app.state::<AppState>().locked.load(Ordering::SeqCst);
+    apply_lock(app, now);
+    now
+}
+
+#[tauri::command]
+fn toggle_overlay_lock(app: AppHandle) -> bool {
+    toggle_lock(&app)
+}
+
+#[tauri::command]
+fn get_overlay_locked(state: State<AppState>) -> bool {
+    state.locked.load(Ordering::SeqCst)
+}
+
+/// Show or hide the overlay window without closing it (hotkey, auto-hide).
+fn set_overlay_visible_inner(app: &AppHandle, visible: bool) {
+    if let Some(w) = app.get_webview_window("overlay") {
+        if visible {
+            let _ = w.show();
+        } else {
+            let _ = w.hide();
+        }
+    } else if visible {
+        let _ = open_overlay(app);
+    }
+}
+
+#[tauri::command]
+fn set_overlay_visible(app: AppHandle, visible: bool) {
+    set_overlay_visible_inner(&app, visible);
+}
+
+fn toggle_overlay_visible_inner(app: &AppHandle) {
+    let visible = app.get_webview_window("overlay").and_then(|w| w.is_visible().ok()).unwrap_or(false);
+    set_overlay_visible_inner(app, !visible);
+}
+
+/// Put the overlay back at the top-left of the main screen at its default size.
+#[tauri::command]
+fn reset_overlay_position(app: AppHandle) {
+    if let Some(path) = overlay_file(&app) {
+        let _ = std::fs::remove_file(path);
+    }
+    if let Some(w) = app.get_webview_window("overlay") {
+        let (mut x, mut y) = (EDGE_MARGIN, EDGE_MARGIN);
+        if let Ok(Some(m)) = app.primary_monitor() {
+            let sf = m.scale_factor();
+            x += m.position().x as f64 / sf;
+            y += m.position().y as f64 / sf;
+        }
+        let _ = w.set_size(LogicalSize::new(DEFAULT_OVERLAY.0, DEFAULT_OVERLAY.1));
+        let _ = w.set_position(LogicalPosition::new(x, y));
+        let _ = w.show();
+    }
+}
+
+#[tauri::command]
+fn set_muted(app: AppHandle, state: State<AppState>, muted: bool) {
+    lock(&state.core).set_muted(muted);
+    applog::line(if muted { "alarms muted" } else { "alarms unmuted" });
+    emit_snapshot(&app, &state.core);
+}
+
+fn toggle_mute(app: &AppHandle) {
+    let state = app.state::<AppState>();
+    let muted = !lock(&state.core).muted();
+    lock(&state.core).set_muted(muted);
+    applog::line(if muted { "alarms muted" } else { "alarms unmuted" });
+    emit_snapshot(app, &state.core);
+}
+
+#[tauri::command]
+fn set_overlay_at_startup(app: AppHandle, state: State<AppState>, on: bool) {
+    lock(&state.core).set_overlay_at_startup(on);
+    emit_snapshot(&app, &state.core);
+}
+
+#[tauri::command]
+fn get_autostart(app: AppHandle) -> bool {
+    app.autolaunch().is_enabled().unwrap_or(false)
+}
+
+#[tauri::command]
+fn set_autostart(app: AppHandle, on: bool) -> Result<(), String> {
+    let launch = app.autolaunch();
+    let r = if on { launch.enable() } else { launch.disable() };
+    r.map_err(|e| e.to_string())
+}
+
+// Global shortcuts. They differ from the A2Tools ones (Ctrl+Alt+L, Ctrl+Alt+Up), so both can run together.
+fn shortcut_lock() -> Shortcut {
+    Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::KeyK)
+}
+fn shortcut_visible() -> Shortcut {
+    Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::KeyJ)
+}
+fn shortcut_mute() -> Shortcut {
+    Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::KeyM)
+}
+
+fn on_shortcut(app: &AppHandle, shortcut: &Shortcut) {
+    if *shortcut == shortcut_lock() {
+        toggle_lock(app);
+    } else if *shortcut == shortcut_visible() {
+        toggle_overlay_visible_inner(app);
+    } else if *shortcut == shortcut_mute() {
+        toggle_mute(app);
+    }
+}
+
 /// Open the overlay, or close it when it is already open. True when open now.
 #[tauri::command]
 async fn toggle_overlay(app: AppHandle) -> Result<bool, String> {
@@ -241,10 +371,100 @@ battle_ms: {}
     }
 }
 
+
+/// The first-run notice is accepted once; until then nothing is captured.
+fn terms_file(app: &AppHandle) -> Option<std::path::PathBuf> {
+    app.path().app_data_dir().ok().map(|d| d.join("terms-accepted"))
+}
+
+#[tauri::command]
+fn terms_accepted(state: State<AppState>) -> bool {
+    state.terms_ok.load(Ordering::SeqCst)
+}
+
+#[tauri::command]
+fn accept_terms(app: AppHandle, state: State<AppState>) {
+    if let Some(path) = terms_file(&app) {
+        if let Some(dir) = path.parent() {
+            let _ = std::fs::create_dir_all(dir);
+        }
+        let _ = std::fs::write(path, env!("CARGO_PKG_VERSION"));
+    }
+    state.terms_ok.store(true, Ordering::SeqCst);
+    applog::line("first-run notice accepted");
+    start_capture(app, state.core.clone(), state.dps.clone(), state.ping.clone(), state.recorder.clone(), state.capturing.clone());
+}
+
+/// Open a web page in the default browser. Only the Npcap site, which is the
+/// one link the app shows; anything else is refused.
+#[tauri::command]
+fn open_url(url: String) -> Result<(), String> {
+    const ALLOWED: [&str; 4] = [
+        "https://npcap.com",
+        "https://npcap.com/",
+        "https://erenozcan.dev",
+        "https://github.com/Eren-Ozcan",
+    ];
+    if !ALLOWED.contains(&url.as_str()) {
+        return Err("link not allowed".into());
+    }
+    std::process::Command::new("explorer.exe").arg(&url).spawn().map(|_| ()).map_err(|e| e.to_string())
+}
+
+/// Show the folder with the app's log file.
+#[tauri::command]
+fn open_log_folder(app: AppHandle) -> Result<String, String> {
+    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let log = dir.join(applog::FILE_NAME);
+    if log.exists() {
+        std::process::Command::new("explorer.exe").arg(format!("/select,{}", log.display())).spawn()
+    } else {
+        std::process::Command::new("explorer.exe").arg(&dir).spawn()
+    }
+    .map_err(|e| e.to_string())?;
+    Ok(log.display().to_string())
+}
+
+/// Save a fight export (JSON or CSV text made by the page) under the app's
+/// `exports` folder and show it. The name is reduced to a safe file name.
+#[tauri::command]
+fn save_export(app: AppHandle, name: String, content: String) -> Result<String, String> {
+    let safe: String = name
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.') { c } else { '_' })
+        .take(80)
+        .collect();
+    if safe.is_empty() || safe.starts_with('.') || !(safe.ends_with(".json") || safe.ends_with(".csv")) {
+        return Err("bad file name".into());
+    }
+    if content.len() > 20 * 1024 * 1024 {
+        return Err("export too large".into());
+    }
+    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?.join("exports");
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let path = dir.join(&safe);
+    std::fs::write(&path, content).map_err(|e| e.to_string())?;
+    let _ = std::process::Command::new("explorer.exe").arg(format!("/select,{}", path.display())).spawn();
+    applog::line(&format!("exported {safe}"));
+    Ok(path.display().to_string())
+}
+
+#[tauri::command]
+fn get_version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
+}
+
 #[tauri::command]
 fn set_alarm(app: AppHandle, state: State<AppState>, id: u32, enabled: bool, minutes: Vec<u32>) {
     let minutes = minutes.into_iter().filter(|&m| m <= 24 * 60).collect();
     lock(&state.core).set_alarm(id, AlarmConfig { enabled, minutes });
+    emit_snapshot(&app, &state.core);
+}
+
+/// The server clock's offset from UTC (hours), which the event schedules are in.
+#[tauri::command]
+fn set_server_offset(app: AppHandle, state: State<AppState>, hours: i32) {
+    lock(&state.core).set_server_offset(hours);
     emit_snapshot(&app, &state.core);
 }
 
@@ -276,6 +496,7 @@ fn start_capture(
         let (tx, rx) = mpsc::channel();
         match capture::start(tx, running.clone()) {
             Ok(devices) => {
+                applog::line(&format!("capture started on {devices} device(s)"));
                 lock(&core).set_status(Status::WaitingForGame { devices });
                 emit_snapshot(&app, &core);
             }
@@ -285,6 +506,7 @@ fn start_capture(
                     CaptureError::NoDevices => Status::CaptureFailed("no network device with an IPv4 address".into()),
                     CaptureError::Other(m) => Status::CaptureFailed(m),
                 };
+                applog::line(&format!("capture failed: {}", match &status { Status::NpcapMissing(m) | Status::CaptureFailed(m) => m.as_str(), _ => "" }));
                 lock(&core).set_status(status);
                 emit_snapshot(&app, &core);
                 capturing.store(false, Ordering::SeqCst);
@@ -309,6 +531,7 @@ fn start_capture(
             let mut c = lock(&core);
             if !connected {
                 connected = true;
+                applog::line("game connection seen");
                 c.set_status(Status::Connected);
                 changed = true;
             }
@@ -377,7 +600,17 @@ fn show_main(app: &AppHandle) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![get_snapshot, get_dps, set_every_fight, get_all_skills, toggle_overlay, save_overlay_geometry, show_settings, get_character_name, set_character_name, get_ping, reset_dps, list_fights, load_fight, delete_fight, set_target_mode, get_skills, start_recording, stop_recording, set_alarm, set_all_enabled, retry_capture])
+        .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, shortcut, event| {
+                    if event.state() == ShortcutState::Pressed {
+                        on_shortcut(app, shortcut);
+                    }
+                })
+                .build(),
+        )
+        .invoke_handler(tauri::generate_handler![toggle_overlay_lock, get_overlay_locked, set_overlay_visible, reset_overlay_position, set_muted, set_overlay_at_startup, get_autostart, set_autostart, get_snapshot, get_dps, set_every_fight, get_all_skills, toggle_overlay, save_overlay_geometry, show_settings, get_character_name, set_character_name, get_ping, reset_dps, list_fights, load_fight, delete_fight, set_target_mode, get_skills, start_recording, stop_recording, set_alarm, set_all_enabled, set_server_offset, retry_capture, terms_accepted, accept_terms, open_url, open_log_folder, save_export, get_version])
         .on_window_event(|window, event| {
             // Closing the main window keeps the alarms running from the tray;
             // the overlay just closes.
@@ -391,6 +624,8 @@ pub fn run() {
         })
         .setup(|app| {
             let dir = app.path().app_data_dir()?;
+            applog::init(&dir);
+            applog::line(&format!("started, version {}", env!("CARGO_PKG_VERSION")));
             let core = Arc::new(Mutex::new(Core::load(dir.join("state.json"))));
             let capturing = Arc::new(AtomicBool::new(false));
             let engine = DpsEngine::new(dir.clone());
@@ -398,22 +633,26 @@ pub fn run() {
             let ping = engine.ping_tracker();
             let dps = Arc::new(Mutex::new(engine));
             let recorder = Arc::new(Mutex::new(Recorder::default()));
-            app.manage(AppState { core: core.clone(), dps: dps.clone(), history: history.clone(), ping: ping.clone(), recorder: recorder.clone(), capturing: capturing.clone() });
+            let terms_ok = Arc::new(AtomicBool::new(dir.join("terms-accepted").exists()));
+            app.manage(AppState { locked: Arc::new(AtomicBool::new(false)), terms_ok: terms_ok.clone(), core: core.clone(), dps: dps.clone(), history: history.clone(), ping: ping.clone(), recorder: recorder.clone(), capturing: capturing.clone() });
 
             let show = MenuItem::with_id(app, "show", "Settings & alarms", true, None::<&str>)?;
-            let overlay_item = MenuItem::with_id(app, "overlay", "Overlay", true, None::<&str>)?;
+            let overlay_item = MenuItem::with_id(app, "overlay", "Show / hide overlay", true, None::<&str>)?;
+            let lock_item = MenuItem::with_id(app, "lock", "Lock / unlock overlay (clicks pass through)", true, None::<&str>)?;
+            let mute_item = MenuItem::with_id(app, "mute", "Mute / unmute alarms", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&overlay_item, &show, &quit])?;
+            let menu = Menu::with_items(app, &[&overlay_item, &lock_item, &mute_item, &show, &quit])?;
             let mut tray = TrayIconBuilder::new()
                 .tooltip("AION2 Boss Alarm")
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "show" => show_main(app),
-                    "overlay" => {
-                        let app = app.clone();
-                        tauri::async_runtime::spawn(async move { let _ = toggle_overlay(app).await; });
+                    "overlay" => toggle_overlay_visible_inner(app),
+                    "lock" => {
+                        toggle_lock(app);
                     }
+                    "mute" => toggle_mute(app),
                     "quit" => app.exit(0),
                     _ => {}
                 })
@@ -427,12 +666,25 @@ pub fn run() {
             }
             tray.build(app)?;
 
-            if let Err(e) = open_overlay(app.handle()) {
-                eprintln!("overlay failed to open: {e}");
+            for (name, sc) in [("lock", shortcut_lock()), ("show/hide", shortcut_visible()), ("mute", shortcut_mute())] {
+                if let Err(e) = app.global_shortcut().register(sc) {
+                    applog::line(&format!("shortcut {name} not registered: {e}"));
+                }
+            }
+            if !lock(&core).overlay_at_startup() {
+                // The overlay stays closed until the tray or the window opens it.
+            } else if let Err(e) = open_overlay(app.handle()) {
+                applog::line(&format!("overlay failed to open: {e}"));
+                show_main(app.handle());
+            }
+            // The first-run notice is shown in the main window before anything is read.
+            if !terms_ok.load(Ordering::SeqCst) {
                 show_main(app.handle());
             }
             start_history_loop(dps.clone(), history);
-            start_capture(app.handle().clone(), core.clone(), dps, ping, recorder, capturing);
+            if terms_ok.load(Ordering::SeqCst) {
+                start_capture(app.handle().clone(), core.clone(), dps, ping, recorder, capturing);
+            }
             start_alarm_loop(app.handle().clone(), core);
             Ok(())
         })
