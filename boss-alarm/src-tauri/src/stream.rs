@@ -26,6 +26,9 @@ struct Flow {
     pending: BTreeMap<u32, Vec<u8>>,
     game: bool,
     seen_bytes: usize,
+    /// In-order bytes not yet handed on, so the combat parser sees the whole
+    /// stream from where the capture began, probing bytes included.
+    raw_new: Vec<u8>,
 }
 
 #[derive(Default)]
@@ -37,6 +40,17 @@ pub struct Tracker {
 /// Packet bodies decoded from one segment of the game connection.
 pub struct Decoded {
     pub bodies: Vec<Vec<u8>>,
+    /// The same stream as raw framed bytes, for the combat parser.
+    pub raw: Vec<u8>,
+    /// Which TCP connection `raw` came from (the game uses several).
+    pub flow: u64,
+}
+
+/// A stable number for one connection, to tell the streams apart downstream.
+fn flow_id(key: &FlowKey) -> u64 {
+    let ((a, ap), (b, bp)) = ((u32::from_be_bytes(key.0), key.1), (u32::from_be_bytes(key.2), key.3));
+    // Both ends: the server's address and the client's port name one connection.
+    (u64::from(a) << 32) ^ (u64::from(b) << 16) ^ (u64::from(ap) << 48) ^ u64::from(bp)
 }
 
 /// Signed distance from `b` to `a` in TCP sequence space.
@@ -59,12 +73,14 @@ impl Tracker {
             None => {
                 flow.next_seq = Some(seg.seq.wrapping_add(seg.payload.len() as u32));
                 flow.buf.extend_from_slice(&seg.payload);
+                flow.raw_new.extend_from_slice(&seg.payload);
             }
             Some(next) => {
                 let d = seq_diff(seg.seq, next);
                 if d == 0 {
                     flow.next_seq = Some(next.wrapping_add(seg.payload.len() as u32));
                     flow.buf.extend_from_slice(&seg.payload);
+                    flow.raw_new.extend_from_slice(&seg.payload);
                 } else if d < 0 {
                     // Retransmission, or the same frame seen on a second device.
                     let skip = (-d) as usize;
@@ -73,6 +89,7 @@ impl Tracker {
                     }
                     flow.next_seq = Some(next.wrapping_add((seg.payload.len() - skip) as u32));
                     flow.buf.extend_from_slice(&seg.payload[skip..]);
+                    flow.raw_new.extend_from_slice(&seg.payload[skip..]);
                 } else {
                     // A gap: hold the segment until the missing bytes arrive.
                     flow.pending.insert(seg.seq, seg.payload);
@@ -95,6 +112,7 @@ impl Tracker {
             if skip < data.len() {
                 flow.next_seq = Some(next.wrapping_add((data.len() - skip) as u32));
                 flow.buf.extend_from_slice(&data[skip..]);
+                flow.raw_new.extend_from_slice(&data[skip..]);
             }
         }
 
@@ -118,7 +136,8 @@ impl Tracker {
             flow.pending.clear();
             flow.next_seq = None;
         }
-        Some(Decoded { bodies })
+        let raw = std::mem::take(&mut flow.raw_new);
+        Some(Decoded { bodies, raw, flow: flow_id(&key) })
     }
 }
 
