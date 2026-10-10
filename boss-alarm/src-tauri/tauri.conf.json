@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "AION2 Boss Alarm",
-  "version": "0.1.2",
-  "identifier": "com.aion2bossalarm.app",
+  "productName": "BellMeter",
+  "version": "0.2.0",
+  "identifier": "com.bellmeter.app",
   "build": {
     "frontendDist": "../src"
   },
@@ -11,7 +11,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "AION2 Boss Alarm",
+        "title": "BellMeter",
         "width": 800,
         "height": 760,
         "minWidth": 440,
@@ -26,6 +26,7 @@
   "bundle": {
     "active": true,
     "targets": [
+      "nsis",
       "msi"
     ],
     "icon": [
@@ -35,17 +36,28 @@
       "icons/icon.ico"
     ],
     "license": "../LICENSE",
-    "createUpdaterArtifacts": true
+    "createUpdaterArtifacts": true,
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": [
+          "English",
+          "Turkish"
+        ],
+        "displayLanguageSelector": false
+      }
+    }
   },
   "plugins": {
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDFGOTREQzAwOUU2OEI5NEMKUldSTXVXaWVBTnlVSC9nczF3dFZrY2puNXlXc2J6Qjh6Q2FncGhXeGIvbVpQakFyMXpUUEdzd2kK",
       "endpoints": [
-        "https://github.com/Eren-Ozcan/aion2-boss-alarm/releases/latest/download/latest.json"
+        "https://github.com/Eren-Ozcan/bellmeter/releases/latest/download/latest.json"
       ],
       "windows": {
         "installMode": "passive"
       }
     }
-  }
+  },
+  "mainBinaryName": "BellMeter"
 }

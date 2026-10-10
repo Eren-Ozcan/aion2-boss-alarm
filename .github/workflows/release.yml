@@ -26,6 +26,6 @@ jobs:
         with:
           projectPath: boss-alarm
           tagName: ${{ github.ref_name }}
-          releaseName: AION2 Boss Alarm ${{ github.ref_name }}
+          releaseName: BellMeter ${{ github.ref_name }}
           releaseDraft: false
-          uploadUpdaterJson: true
+          updaterJsonPreferNsis: true
