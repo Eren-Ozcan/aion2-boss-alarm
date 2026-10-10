@@ -16,6 +16,13 @@
     <div id="setup" class="setup" hidden></div>
   </header>
 
+  <nav class="tabs" role="tablist">
+    <button id="tabBosses" class="tab active" role="tab" aria-selected="true" data-i18n="tabBosses"></button>
+    <button id="tabDps" class="tab" role="tab" aria-selected="false" data-i18n="tabDps"></button>
+    <button id="tabHistory" class="tab" role="tab" aria-selected="false" data-i18n="tabHistory"></button>
+  </nav>
+
+  <div id="viewBosses">
   <section class="toolbar" aria-label="Sound and alarms">
     <div class="row">
       <button id="enableAll" class="btn" data-i18n="enableAll"></button>
@@ -41,8 +48,71 @@
     <h2 data-i18n="abyss"></h2>
     <div id="abyss" class="list"></div>
   </main>
+  </div>
+
+  <section id="viewDps" hidden>
+    <div class="row">
+      <label class="vol"><span data-i18n="targetMode"></span>
+        <select id="targetMode" class="select">
+          <option value="bossTargets" data-i18n="modeBoss"></option>
+          <option value="lastHitByMe" data-i18n="modeLast"></option>
+          <option value="allTargets" data-i18n="modeAll"></option>
+          <option value="trainTargets" data-i18n="modeTrain"></option>
+        </select>
+      </label>
+    </div>
+    <div class="row">
+      <label class="vol"><span data-i18n="charName"></span>
+        <input id="charName" class="text-input" type="text" maxlength="24" autocomplete="off" spellcheck="false">
+      </label>
+      <button id="charSave" class="btn" data-i18n="save"></button>
+    </div>
+    <div class="row">
+      <button id="overlayBtn" class="btn" data-i18n="overlay"></button>
+      <label class="vol"><span data-i18n="overlayOpacity"></span>
+        <input id="overlayOpacity" type="range" min="0" max="100" value="40">
+      </label>
+      <label class="vol"><span data-i18n="theme"></span>
+        <select id="themeSel" class="select">
+          <option value="auto" data-i18n="themeAuto"></option>
+          <option value="light" data-i18n="themeLight"></option>
+          <option value="dark" data-i18n="themeDark"></option>
+        </select>
+      </label>
+    </div>
+    <div class="row">
+      <button id="recBtn" class="btn" data-i18n="recStart"></button>
+    </div>
+    <p id="recInfo" class="muted"></p>
+    <div id="hp" class="hp" hidden><div id="hpFill" class="hp-fill"></div></div>
+    <p id="dpsTarget" class="muted"></p>
+    <div id="dpsRows" class="dps-rows"></div>
+    <details id="chartBox" class="chart-box">
+      <summary data-i18n="timeline"></summary>
+      <div id="chart"></div>
+    </details>
+    <p id="dpsEmpty" class="muted" data-i18n="dpsEmpty"></p>
+  </section>
+
+  <section id="viewHistory" hidden>
+    <div id="histListBox">
+      <div id="histList" class="hist-list"></div>
+      <p id="histEmpty" class="muted" data-i18n="histEmpty"></p>
+    </div>
+    <div id="histDetail" hidden>
+      <div class="row">
+        <button id="histBack" class="btn" data-i18n="histBack"></button>
+        <button id="histDelete" class="btn ghost" data-i18n="histDelete"></button>
+      </div>
+      <p id="histTitle" class="muted"></p>
+      <div id="histChart"></div>
+      <div id="histRows" class="dps-rows"></div>
+    </div>
+  </section>
 
   <div id="toasts" class="toasts" aria-live="assertive"></div>
+  <script src="skill_icons.js"></script>
+  <script src="chart.js"></script>
   <script src="main.js"></script>
 </body>
 </html>
