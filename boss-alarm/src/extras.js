@@ -25,6 +25,10 @@ const X = {
     exportOk: (p) => `Saved: ${p}`,
     exportFail: "Could not save the export.",
     version: (v) => `Version ${v}`,
+    checkUpdate: "Check for updates",
+    upToDate: "You are up to date.",
+    updateFound: (v) => `Version ${v} found, installing…`,
+    updateFail: "Update check failed.",
   },
   tr: {
     welcomeTitle: "Başlamadan önce",
@@ -49,6 +53,10 @@ const X = {
     exportOk: (p) => `Kaydedildi: ${p}`,
     exportFail: "Dışa aktarma kaydedilemedi.",
     version: (v) => `Sürüm ${v}`,
+    checkUpdate: "Güncellemeleri denetle",
+    upToDate: "Uygulama güncel.",
+    updateFound: (v) => `${v} sürümü bulundu, kuruluyor…`,
+    updateFail: "Güncelleme denetlenemedi.",
   },
 }[typeof lang !== "undefined" ? lang : "en"];
 
@@ -218,3 +226,17 @@ showWelcome();
 document.querySelectorAll("button.ext[data-url]").forEach((b) => {
   b.onclick = () => invoke("open_url", { url: b.dataset.url }).catch(() => {});
 });
+
+// ---- in-app update ----
+async function checkUpdate(silent) {
+  try {
+    const update = await window.__TAURI__.updater.check();
+    if (!update) { if (!silent) toast(X.upToDate); return; }
+    toast(X.updateFound(update.version));
+    await update.downloadAndInstall();
+  } catch { if (!silent) toast(X.updateFail); }
+}
+const updBtn = document.getElementById("checkUpdate");
+updBtn.textContent = X.checkUpdate;
+updBtn.onclick = () => checkUpdate(false);
+setTimeout(() => checkUpdate(true), 8000);
