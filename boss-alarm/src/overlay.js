@@ -205,6 +205,15 @@ const num = (n) => {
   if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
   return String(Math.round(n));
 };
+function cpBadge(v) {
+  const c = el("span", "cp");
+  const img = document.createElement("img");
+  img.src = "assets/cp.png";
+  img.alt = "";
+  c.append(img, document.createTextNode(v.toLocaleString()));
+  c.title = TEXT.power;
+  return c;
+}
 const rate = (n) => (n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : `${Math.round(n)}`);
 const mmss = (ms) => {
   const s = Math.max(0, Math.round(ms / 1000));
@@ -366,7 +375,7 @@ async function tickDps() {
     }
     const fig = el("div", "figures", metric === "dmg" ? num(p.amount) : rate(p.dps));
     if (metric === "both") fig.append(el("small", "", num(p.amount)));
-    item.append(el("span", "name", displayName(p)), fig, el("span", "pct", `${p.damageContribution.toFixed(1)}%`));
+    item.append(el("span", "name", displayName(p)), ...(p.combatPower > 0 ? [cpBadge(p.combatPower)] : []), fig, el("span", "pct", `${p.damageContribution.toFixed(1)}%`));
     return item;
   }));
 

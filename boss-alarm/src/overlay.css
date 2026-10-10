@@ -34,7 +34,8 @@ html { font-size: calc(15px * var(--scale)); }
 .boss-name.waiting { color: rgba(235, 245, 255, .92); font-weight: 600; }
 .boss-sub { font: 600 0.7333rem var(--num); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
 .boss-sub:empty { display: none; }
-.btns { display: flex; gap: 0.6rem; flex: none; }
+.btns { display: flex; gap: 0.6rem; flex: none; opacity: 0; transition: opacity .15s; }
+.meter:hover .btns, .meter:focus-within .btns, .btns:has([aria-expanded="true"]) { opacity: 1; }
 .hbtn { width: 1.0667rem; height: 1.0667rem; padding: 0; border: 0; background: transparent; color: rgba(235, 240, 250, .55); cursor: pointer; display: grid; place-items: center; }
 .hbtn svg { width: 1.0667rem; height: 1.0667rem; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .hbtn:hover { color: #fff; }
@@ -121,9 +122,11 @@ html { font-size: calc(15px * var(--scale)); }
 .rank { min-width: 1.6rem; text-align: center; font: 700 0.9333rem var(--num); color: rgba(255, 255, 255, .55); }
 .item.rank1 .rank { color: #e8c26a; }
 .icon { width: 1.4667rem; height: 1.4667rem; flex: none; }
-.name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 0.9333rem var(--text); text-shadow: 0 1px 2px rgba(0, 0, 0, .9); }
+.name { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 0.9333rem var(--text); text-shadow: 0 1px 2px rgba(0, 0, 0, .9); }
 .item.user .name { color: var(--user); }
-.figures { font: 700 1rem var(--num); font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px #000; white-space: nowrap; }
+.cp { display: inline-flex; align-items: center; gap: 0.3rem; font: 700 0.8667rem var(--num); font-variant-numeric: tabular-nums; color: #8fd3ff; text-shadow: 0 1px 2px rgba(0, 0, 0, .9); white-space: nowrap; }
+.cp img { width: 1.2rem; height: 1.2rem; object-fit: contain; }
+.figures { margin-left: auto; font: 700 1rem var(--num); font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px #000; white-space: nowrap; }
 .figures small { font-weight: 500; opacity: .7; margin-left: 0.3333rem; font-size: 0.8667rem; }
 .pct { font: 600 0.8667rem var(--num); color: rgba(255, 255, 255, .75); min-width: 2.9333rem; text-align: right; text-shadow: 0 1px 2px #000; }
 .empty { padding: 0.2667rem 0.8rem 0.6667rem; color: rgba(220, 228, 245, .62); font: 500 0.8667rem var(--text); }
