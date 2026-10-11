@@ -23,6 +23,7 @@ use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, State, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt as _};
+use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
 use crate::capture::{now_ms, CaptureError};
@@ -454,6 +455,18 @@ fn get_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
+/// An update was found: a Windows notification, and the tray tooltip says so for as long
+/// as the app runs, since the window is usually closed to the tray.
+#[tauri::command]
+fn announce_update(app: AppHandle, title: String, body: String, tooltip: String) {
+    if let Some(tray) = app.tray_by_id("main") {
+        let _ = tray.set_tooltip(Some(tooltip));
+    }
+    if let Err(e) = app.notification().builder().title(title).body(body).show() {
+        applog::line(&format!("update notification failed: {e}"));
+    }
+}
+
 #[tauri::command]
 fn set_alarm(app: AppHandle, state: State<AppState>, id: u32, enabled: bool, minutes: Vec<u32>) {
     let minutes = minutes.into_iter().filter(|&m| m <= 24 * 60).collect();
@@ -602,6 +615,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_notification::init())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, shortcut, event| {
@@ -611,7 +625,7 @@ pub fn run() {
                 })
                 .build(),
         )
-        .invoke_handler(tauri::generate_handler![toggle_overlay_lock, get_overlay_locked, set_overlay_visible, reset_overlay_position, set_muted, set_overlay_at_startup, get_autostart, set_autostart, get_snapshot, get_dps, set_every_fight, get_all_skills, toggle_overlay, save_overlay_geometry, show_settings, get_character_name, set_character_name, get_ping, reset_dps, list_fights, load_fight, delete_fight, set_target_mode, get_skills, start_recording, stop_recording, set_alarm, set_all_enabled, set_server_offset, retry_capture, terms_accepted, accept_terms, open_url, open_log_folder, save_export, get_version])
+        .invoke_handler(tauri::generate_handler![toggle_overlay_lock, get_overlay_locked, set_overlay_visible, reset_overlay_position, set_muted, set_overlay_at_startup, get_autostart, set_autostart, get_snapshot, get_dps, set_every_fight, get_all_skills, toggle_overlay, save_overlay_geometry, show_settings, get_character_name, set_character_name, get_ping, reset_dps, list_fights, load_fight, delete_fight, set_target_mode, get_skills, start_recording, stop_recording, set_alarm, set_all_enabled, set_server_offset, retry_capture, terms_accepted, accept_terms, open_url, open_log_folder, save_export, get_version, announce_update])
         .on_window_event(|window, event| {
             // Closing the main window keeps the alarms running from the tray;
             // the overlay just closes.
@@ -643,7 +657,7 @@ pub fn run() {
             let mute_item = MenuItem::with_id(app, "mute", "Mute / unmute alarms", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&overlay_item, &lock_item, &mute_item, &show, &quit])?;
-            let mut tray = TrayIconBuilder::new()
+            let mut tray = TrayIconBuilder::with_id("main")
                 .tooltip("BellMeter")
                 .menu(&menu)
                 .show_menu_on_left_click(false)

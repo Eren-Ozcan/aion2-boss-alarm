@@ -28,6 +28,9 @@ const X = {
     checkUpdate: "Check for updates",
     upToDate: "You are up to date.",
     updateFound: (v) => `Version ${v} is available`,
+    notifyTitle: "BellMeter update",
+    notifyBody: (v) => `Version ${v} is ready. Open BellMeter to install it.`,
+    notifyTip: (v) => `BellMeter - update ${v} available`,
     updateInstall: (v) => `Update to ${v}`,
     updating: "Downloading the update…",
     updateFail: "Update check failed.",
@@ -58,6 +61,9 @@ const X = {
     checkUpdate: "Güncellemeleri denetle",
     upToDate: "Uygulama güncel.",
     updateFound: (v) => `${v} sürümü hazır`,
+    notifyTitle: "BellMeter güncellemesi",
+    notifyBody: (v) => `${v} sürümü hazır. Kurmak için BellMeter'i aç.`,
+    notifyTip: (v) => `BellMeter - ${v} güncellemesi var`,
     updateInstall: (v) => `${v} sürümüne güncelle`,
     updating: "Güncelleme indiriliyor…",
     updateFail: "Güncelleme denetlenemedi.",
@@ -234,11 +240,21 @@ document.querySelectorAll("button.ext[data-url]").forEach((b) => {
 // ---- in-app update ----
 // A found update is announced and waits for the click; nothing installs on its own.
 const updBanner = document.getElementById("updateBanner");
+// The Windows notification (and the tray tooltip) comes once per version, not on every check.
+function announceOnce(version) {
+  let seen = null;
+  try { seen = localStorage.getItem("updateAnnounced"); } catch { /* unavailable */ }
+  if (seen === version) return;
+  invoke("announce_update", { title: X.notifyTitle, body: X.notifyBody(version), tooltip: X.notifyTip(version) })
+    .then(() => { try { localStorage.setItem("updateAnnounced", version); } catch { /* unavailable */ } })
+    .catch(() => {});
+}
 async function checkUpdate(silent) {
   try {
     const update = await window.__TAURI__.updater.check();
     if (!update) { if (!silent) toast(X.upToDate); return; }
     toast(X.updateFound(update.version));
+    announceOnce(update.version);
     updBanner.textContent = X.updateInstall(update.version);
     updBanner.hidden = false;
     updBanner.onclick = async () => {
