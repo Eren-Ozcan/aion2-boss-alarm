@@ -391,6 +391,7 @@ function render() {
     mins.disabled = !b.alarm.enabled;
     if (document.activeElement !== mins) mins.value = b.alarm.minutes.join(", ");
     row.classList.toggle("on", b.alarm.enabled);
+    row.style.order = b.alarm.enabled ? 0 : 1;
     const st = bossState(b, now);
     const el = row.querySelector(".state");
     el.textContent = st.time;
@@ -412,6 +413,7 @@ function render() {
     mins.disabled = !e.alarm.enabled;
     if (document.activeElement !== mins) mins.value = e.alarm.minutes.join(", ");
     row.classList.toggle("on", e.alarm.enabled);
+    row.style.order = e.alarm.enabled ? 0 : 1;
     const left = e.next_local_ms - now;
     const soon = left < 5 * 60_000;
     const el = row.querySelector(".state");
