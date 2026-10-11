@@ -412,6 +412,59 @@ fn open_url(url: String) -> Result<(), String> {
     std::process::Command::new("explorer.exe").arg(&url).spawn().map(|_| ()).map_err(|e| e.to_string())
 }
 
+/// Download the current Npcap installer from npcap.com and run it. Npcap's free
+/// licence forbids redistribution, so the file is never bundled: it is fetched
+/// from the official site on the user's PC, its code signature is checked, and
+/// the installer then asks for admin rights and shows its own pages. Returns
+/// when the installer has closed.
+#[tauri::command]
+async fn install_npcap() -> Result<(), String> {
+    const SCRIPT: &str = r#"
+$ErrorActionPreference = 'Stop'
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$page = (Invoke-WebRequest -UseBasicParsing 'https://npcap.com/').Content
+$m = [regex]::Match($page, 'dist/npcap-[0-9.]+\.exe')
+if (-not $m.Success) { throw 'installer link not found' }
+$f = Join-Path $env:TEMP 'bellmeter-npcap-setup.exe'
+Invoke-WebRequest -UseBasicParsing ('https://npcap.com/' + $m.Value) -OutFile $f
+$s = Get-AuthenticodeSignature $f
+if ($s.Status -ne 'Valid' -or $s.SignerCertificate.Subject -notmatch 'Nmap Software LLC|Insecure\.Com') {
+    Remove-Item $f -Force
+    throw 'installer signature check failed'
+}
+Start-Process -FilePath $f -Wait
+Remove-Item $f -Force -ErrorAction SilentlyContinue
+"#;
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        let out = tauri::async_runtime::spawn_blocking(|| {
+            std::process::Command::new("powershell.exe")
+                .args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", SCRIPT])
+                .creation_flags(CREATE_NO_WINDOW)
+                .output()
+        })
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())?;
+        if out.status.success() {
+            applog::line("npcap installer finished");
+            Ok(())
+        } else {
+            let err = String::from_utf8_lossy(&out.stderr);
+            let err = err.lines().next().unwrap_or("install failed").to_string();
+            applog::line(&format!("npcap install failed: {err}"));
+            Err(err)
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = SCRIPT;
+        Err("Windows only".into())
+    }
+}
+
 /// Show the folder with the app's log file.
 #[tauri::command]
 fn open_log_folder(app: AppHandle) -> Result<String, String> {
@@ -625,7 +678,7 @@ pub fn run() {
                 })
                 .build(),
         )
-        .invoke_handler(tauri::generate_handler![toggle_overlay_lock, get_overlay_locked, set_overlay_visible, reset_overlay_position, set_muted, set_overlay_at_startup, get_autostart, set_autostart, get_snapshot, get_dps, set_every_fight, get_all_skills, toggle_overlay, save_overlay_geometry, show_settings, get_character_name, set_character_name, get_ping, reset_dps, list_fights, load_fight, delete_fight, set_target_mode, get_skills, start_recording, stop_recording, set_alarm, set_all_enabled, set_server_offset, retry_capture, terms_accepted, accept_terms, open_url, open_log_folder, save_export, get_version, announce_update])
+        .invoke_handler(tauri::generate_handler![toggle_overlay_lock, get_overlay_locked, set_overlay_visible, reset_overlay_position, set_muted, set_overlay_at_startup, get_autostart, set_autostart, get_snapshot, get_dps, set_every_fight, get_all_skills, toggle_overlay, save_overlay_geometry, show_settings, get_character_name, set_character_name, get_ping, reset_dps, list_fights, load_fight, delete_fight, set_target_mode, get_skills, start_recording, stop_recording, set_alarm, set_all_enabled, set_server_offset, retry_capture, terms_accepted, accept_terms, open_url, install_npcap, open_log_folder, save_export, get_version, announce_update])
         .on_window_event(|window, event| {
             // Closing the main window keeps the alarms running from the tray;
             // the overlay just closes.
