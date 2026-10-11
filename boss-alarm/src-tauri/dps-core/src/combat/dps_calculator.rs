@@ -663,7 +663,7 @@ impl DpsCalculator {
     fn decide_target(
         &mut self,
         combat_data: &HashMap<i32, TargetCombatData>,
-        nickname_data: &HashMap<i32, String>,
+        _nickname_data: &HashMap<i32, String>,
         summon_data: &HashMap<i32, i32>,
     ) -> (HashSet<i32>, String, i32) {
         let mob_data = self.data_storage.get_mob_data();
@@ -718,38 +718,12 @@ impl DpsCalculator {
                 {
                     let name = self.resolve_target_name(best);
                     (HashSet::from([best]), name, best)
-                } else if self.data_storage.current_dungeon_id() > 0 {
-                    // No boss yet in a dungeon: show nothing. Every mob in an
-                    // instance is on the way to a boss, so the fallback below
-                    // put the first trash pull of each run on the meter.
-                    (HashSet::new(), String::new(), 0)
                 } else {
-                    // No boss: the mob with the most damage that you or your
-                    // party hit, and nothing until the meter knows who you
-                    // are. Any mob within range used to count then, and in
-                    // the open world that put strangers fighting their own
-                    // mobs on your meter (2026-10-04: one player, then
-                    // another, each alone on a mob you never touched), and
-                    // still did for the seconds after opening the meter or
-                    // entering a zone, before you were identified.
-                    let ours = self.resolve_local_ids(summon_data).map(|mut ids| {
-                        let party = self.data_storage.get_party_members();
-                        ids.extend(nickname_data.iter()
-                            .filter(|(_, name)| party.contains_key(name.as_str()))
-                            .map(|(&id, _)| id));
-                        ids
-                    });
-                    let best = ours.as_ref().and_then(|ids| combat_data.iter()
-                        .filter(|(_, td)| td.actors.keys()
-                            .any(|&a| ids.contains(&summon_resolver::resolve(a, summon_data))))
-                        .max_by_key(|(_, td)| td.total_damage));
-                    match best {
-                        Some((&id, _)) => {
-                            let name = self.resolve_target_name(id);
-                            (HashSet::from([id]), name, id)
-                        }
-                        None => (HashSet::new(), String::new(), 0),
-                    }
+                    // No boss of ours: nothing on the meter. Falling back to the
+                    // busiest mob you or your party hit put every trash mob in
+                    // the open world on the "boss" meter. Use "last hit by me"
+                    // to follow ordinary mobs.
+                    (HashSet::new(), String::new(), 0)
                 }
             }
             TargetSelectionMode::AllTargets => {
