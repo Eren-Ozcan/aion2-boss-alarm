@@ -15,9 +15,12 @@ const X = {
     go: "Start using the app",
     guideTitle: "Npcap is needed",
     guideLead: "BellMeter reads game traffic with Npcap, a free packet capture tool. Set it up once:",
-    s1: "Open the Npcap site and download the installer.",
-    s2: "Run it and tick “Install Npcap in WinPcap API-compatible Mode”, then finish the setup.",
-    s3: "Come back here and press Retry.",
+    s1: "Press “Install Npcap”. The installer is downloaded from npcap.com and checked.",
+    s2: "Allow it to run, press Next through its pages and finish the setup.",
+    s3: "Capture starts by itself. If it does not, press Retry.",
+    installNpcap: "Install Npcap",
+    installing: "Installer is running. Finish its setup, then come back here…",
+    installFail: (e) => `Could not install automatically (${e}). Use the website instead.`,
     openNpcap: "Open npcap.com",
     retry: "Retry",
     openLog: "Open log folder",
@@ -48,9 +51,12 @@ const X = {
     go: "Uygulamayı kullanmaya başla",
     guideTitle: "Npcap gerekli",
     guideLead: "BellMeter oyun trafiğini Npcap ile okur, ücretsiz bir paket yakalama aracıdır. Bir kez kur:",
-    s1: "Npcap sitesini aç ve kurulum dosyasını indir.",
-    s2: "Çalıştır ve “Install Npcap in WinPcap API-compatible Mode” kutusunu işaretle, kurulumu bitir.",
-    s3: "Buraya dön ve Yeniden dene'ye bas.",
+    s1: "“Npcap'i kur”a bas. Kurulum dosyası npcap.com'dan indirilir ve doğrulanır.",
+    s2: "Çalışmasına izin ver, sayfalarda İleri'ye basarak kurulumu bitir.",
+    s3: "Yakalama kendiliğinden başlar. Başlamazsa Yeniden dene'ye bas.",
+    installNpcap: "Npcap'i kur",
+    installing: "Kurulum çalışıyor. Kurulumu bitir, sonra buraya dön…",
+    installFail: (e) => `Otomatik kurulamadı (${e}). Bunun yerine siteyi kullan.`,
     openNpcap: "npcap.com'u aç",
     retry: "Yeniden dene",
     openLog: "Kayıt klasörünü aç",
@@ -105,6 +111,9 @@ async function showWelcome() {
 }
 
 // ---- Npcap guide, drawn into the setup box by main.js ----
+// main.js redraws the guide every second, so the install state lives out here.
+let npcapInstall = { running: false, error: "" };
+
 function renderNpcapGuide(setup, retry) {
   setup.classList.add("guide");
   const title = document.createElement("div");
@@ -122,16 +131,35 @@ function renderNpcapGuide(setup, retry) {
   }
   const actions = document.createElement("div");
   actions.className = "guide-actions";
+  const install = document.createElement("button");
+  install.className = "btn primary";
+  install.textContent = X.installNpcap;
+  install.disabled = npcapInstall.running;
+  install.onclick = async () => {
+    npcapInstall = { running: true, error: "" };
+    install.disabled = true;
+    try {
+      await invoke("install_npcap");
+      npcapInstall = { running: false, error: "" };
+      retry();
+    } catch (e) {
+      npcapInstall = { running: false, error: String(e) };
+    }
+  };
   const open = document.createElement("button");
-  open.className = "btn primary";
+  open.className = "btn";
   open.textContent = X.openNpcap;
   open.onclick = () => invoke("open_url", { url: "https://npcap.com" }).catch(() => {});
   const again = document.createElement("button");
   again.className = "btn";
   again.textContent = X.retry;
   again.onclick = retry;
-  actions.append(open, again);
-  setup.replaceChildren(title, lead, steps, actions);
+  actions.append(install, open, again);
+  const note = document.createElement("div");
+  note.className = "guide-lead";
+  if (npcapInstall.running) note.textContent = X.installing;
+  else if (npcapInstall.error) note.textContent = X.installFail(npcapInstall.error);
+  setup.replaceChildren(title, lead, steps, actions, ...(note.textContent ? [note] : []));
 }
 
 // ---- fight export (the fight open in History) ----
