@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "BellMeter",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "identifier": "com.bellmeter.app",
   "build": {
     "frontendDist": "../src"
@@ -46,7 +46,8 @@
         ],
         "displayLanguageSelector": false
       }
-    }
+    },
+    "publisher": "Eren Özcan"
   },
   "plugins": {
     "updater": {
