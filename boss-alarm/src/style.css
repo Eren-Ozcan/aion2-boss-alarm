@@ -263,3 +263,8 @@ kbd { font: 700 11px var(--num); letter-spacing: .06em; padding: 2px 7px; border
 }
 .update-banner { width: 100%; }
 .update-banner[hidden] { display: none; }
+#overlayBtn { white-space: nowrap; flex: none; }
+.side-foot .link { align-self: flex-start; }
+.side-foot .side-row { align-self: stretch; }
+.side-foot .side-row.side-links { align-self: flex-start; }
+.side-foot .side-links { gap: 12px; }
