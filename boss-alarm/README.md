@@ -9,6 +9,27 @@ touch the game process or its memory and sends nothing to the game server. The o
 it makes are for skill icon images, to NCSOFT's public game data CDN (file names only, nothing
 about you or your fights).
 
+## Download
+Get **`BellMeter_x.y.z_x64-setup.exe`** from the
+[latest release](https://github.com/Eren-Ozcan/bellmeter/releases/latest) and run it. It installs
+for your user only (no admin rights), and the last page offers a desktop shortcut. An `.msi` is
+there too. The app updates itself: when a new version is out, a button appears in the sidebar.
+
+You need [Npcap](https://npcap.com) (free) to read the game's network traffic. If it is missing,
+the app shows a short guide on first start. Windows 10 or 11, 64-bit.
+
+Windows may warn about an unknown publisher, because the installer is not code-signed yet:
+choose **More info**, then **Run anyway**.
+
+## Screenshots
+![Boss timers](docs/screenshots/main-bosses.png)
+
+| DPS meter in the main window | The overlay in the game |
+| --- | --- |
+| ![DPS](docs/screenshots/main-dps.png) | ![Overlay](docs/screenshots/overlay.png) |
+
+The numbers and names in the screenshots are made up.
+
 ## How it works
 - Open the in-game map or boss list once. The server answers with every boss timer as an
   absolute time, so the app can keep counting down and alarm with the map closed.
@@ -33,7 +54,8 @@ about you or your fights).
 
 ## DPS meter
 - A transparent, always-on-top overlay that opens at startup: per-player damage and DPS,
-  class icons, boss HP and estimated fight length, ping. You are always shown, at your true
+  class icons, combat power beside the name (party members only: the game sends it for them), boss
+  HP and estimated fight length, ping. The header buttons fade out when the mouse is away. You are always shown, at your true
   rank, even outside the top rows. Rank colors: gold, silver, bronze, then two quiet greens;
   yours is always blue.
 - Click a player (in the main window) for a per-skill breakdown with crit, back, double and
@@ -78,17 +100,13 @@ did (start, capture status, exports), never chat, names or packet data.
 ## Build
 ```
 npm install
-npx tauri build      # MSI in src-tauri/target/release/bundle/msi
+npx tauri build      # setup.exe and .msi in src-tauri/target/release/bundle/
 cd src-tauri && cargo test
 ```
 
 ## Notes
 - How the boss list packet was decoded: [docs/boss-list-packet.md](../docs/boss-list-packet.md).
 - Not yet known: the timer of "Watcher Kaira" in the abyss list (the packet holds none for it).
-
-## Windows SmartScreen
-The installer is not code-signed yet, so Windows may show "Windows protected your PC". Choose
-**More info**, then **Run anyway**. The in-app updates are signed separately and are not affected.
 
 ## Disclaimer
 - Unofficial fan project. Not affiliated with, endorsed by or approved by NCSOFT or any
