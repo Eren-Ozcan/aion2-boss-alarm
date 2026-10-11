@@ -16,7 +16,10 @@ for your user only (no admin rights), and the last page offers a desktop shortcu
 there too. The app updates itself: when a new version is out, a button appears in the sidebar.
 
 You need [Npcap](https://npcap.com) (free) to read the game's network traffic. If it is missing,
-the app shows a short guide on first start. Windows 10 or 11, 64-bit.
+the app shows a guide on first start with an **Install Npcap** button: it downloads the
+installer from npcap.com, checks its signature and runs it, so you only click Next. (Npcap's
+licence does not allow bundling it, so it is never shipped inside BellMeter.) Windows 10 or 11,
+64-bit.
 
 Windows may warn about an unknown publisher, because the installer is not code-signed yet:
 choose **More info**, then **Run anyway**.
@@ -94,8 +97,10 @@ did (start, capture status, exports), never chat, names or packet data.
 
 ## Requirements
 - Windows 10/11
-- [Npcap](https://npcap.com), installed with **"Install Npcap in WinPcap API-compatible Mode"**
-  ticked. If the app cannot capture, run it as administrator.
+- [Npcap](https://npcap.com), a normal install is enough. The app loads
+  `C:\Windows\System32\Npcap\wpcap.dll` directly, so "WinPcap API-compatible Mode" is optional
+  (it is only a fallback to `wpcap.dll` on the system path). If the app cannot capture, run it
+  as administrator.
 
 ## Build
 ```
