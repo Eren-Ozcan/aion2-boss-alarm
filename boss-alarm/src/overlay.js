@@ -68,6 +68,8 @@ textScale.value = store.get("overlayScale") ?? "100";
 textScale.addEventListener("input", () => { store.set("overlayScale", textScale.value); applyLook(); });
 const applyLook = () => {
   document.documentElement.style.setProperty("--scale", String(Number(textScale.value) / 100));
+  // The settings panel keeps its size, so the slider does not move away under the cursor while dragging.
+  document.documentElement.style.setProperty("--unscale", String(100 / Number(textScale.value)));
   document.documentElement.style.setProperty("--window-opacity", String(Number(opacity.value) / 100));
 };
 opacity.addEventListener("input", () => { store.set("overlayOpacity", opacity.value); applyLook(); });
